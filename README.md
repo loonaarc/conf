@@ -5,9 +5,9 @@ This folder contains the openHAB configuration for the distributed edge-based sa
 ## What Is Included
 
 - `things/mqtt.things` defines the MQTT broker and D1 Mini MQTT channels.
-- `items/lab3.items` defines the openHAB items shown in the UI and used by rules.
-- `rules/lab3.rules` currently toggles the relay when motion is detected and automation is enabled.
-- `sitemaps/lab3.sitemap` defines the current Basic UI page.
+- `items/safety_monitor.items` defines the openHAB items shown in the UI and used by rules.
+- `rules/safety_monitor.rules` currently toggles the relay when motion is detected and automation is enabled.
+- `sitemaps/safety_monitor.sitemap` defines the current Basic UI page.
 - `services/addons.cfg` installs the required openHAB add-ons on startup.
 
 For the system design and data flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -424,7 +424,7 @@ http://localhost:8080
 For the Basic UI sitemap, use:
 
 ```text
-http://localhost:8080/basicui/app?sitemap=lab3
+http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
 ## How To Use It
@@ -434,11 +434,11 @@ http://localhost:8080/basicui/app?sitemap=lab3
 3. Watch `Motion` to see motion state updates from MQTT.
 4. Enable `Motion automation` if motion should toggle the relay.
 
-When `Motion automation` is ON and the `Motion` item changes to ON, the rule in `rules/lab3.rules` toggles the relay.
+When `Motion automation` is ON and the `Motion` item changes to ON, the rule in `rules/safety_monitor.rules` toggles the relay.
 
 ## Console Checks
 
-The Lab 3 handout recommends checking the configuration with the openHAB console and logs.
+The project workflow still uses the openHAB console and logs for configuration checks.
 
 You can connect to the console by SSH:
 

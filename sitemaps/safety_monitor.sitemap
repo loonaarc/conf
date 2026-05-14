@@ -1,4 +1,4 @@
-sitemap lab3 label="Lab 3"
+sitemap safety_monitor label="Safety Monitor"
 {
     Frame label="Device"
     {

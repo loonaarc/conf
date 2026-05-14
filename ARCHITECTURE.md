@@ -35,13 +35,13 @@ things/mqtt.things
   defines MQTT broker and MQTT device channels
         |
         v
-items/lab3.items
+items/safety_monitor.items
   links channels to openHAB items
         |
-        +--> sitemaps/lab3.sitemap
+        +--> sitemaps/safety_monitor.sitemap
         |      displays items in Basic UI
         |
-        +--> rules/lab3.rules
+        +--> rules/safety_monitor.rules
                reacts to item state changes
 ```
 
@@ -84,7 +84,7 @@ $.Switch1.Action
 
 ## Item Layer
 
-`items/lab3.items` creates openHAB items:
+`items/safety_monitor.items` creates openHAB items:
 
 ```text
 Relay             -> mqtt:topic:d1mini:relay
@@ -98,7 +98,7 @@ In the original temperature example from the handout, this layer would also incl
 
 ## Rule Layer
 
-`rules/lab3.rules` contains one rule:
+`rules/safety_monitor.rules` contains one rule:
 
 ```text
 Motion changed to ON
@@ -113,7 +113,7 @@ The Lab 3 handout describes an automation rule based on the DS18B20 temperature 
 
 ## UI Layer
 
-`sitemaps/lab3.sitemap` defines the Basic UI page named `lab3`.
+`sitemaps/safety_monitor.sitemap` defines the Basic UI page named `safety_monitor`.
 
 It has two frames:
 
