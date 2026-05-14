@@ -1,0 +1,54 @@
+rule "Initialize safety controls"
+when
+    System started
+then
+    if (Safety_Automation.state == NULL) {
+        Safety_Automation.postUpdate(ON)
+    }
+    if (Safety_RiskScore.state == NULL) {
+        Safety_RiskScore.postUpdate(0)
+    }
+    if (Safety_RiskLevel.state == NULL) {
+        Safety_RiskLevel.postUpdate("Low")
+    }
+end
+
+rule "Calculate safety risk"
+when
+    Item Monitor1_Motion changed or
+    Item Monitor1_Door changed
+then
+    var Number score = 0
+
+    if (Monitor1_Motion.state == ON) {
+        score = score + 1
+    }
+    if (Monitor1_Door.state == ON) {
+        score = score + 2
+    }
+    if (Monitor1_Motion.state == ON && Monitor1_Door.state == ON) {
+        score = score + 2
+    }
+
+    Safety_RiskScore.postUpdate(score)
+
+    if (score >= 4) {
+        Safety_RiskLevel.postUpdate("High")
+        if (Safety_Automation.state == ON) {
+            Alarm1_Relay.sendCommand(ON)
+            Alarm1_Buzzer.sendCommand(ON)
+        }
+    } else if (score >= 2) {
+        Safety_RiskLevel.postUpdate("Medium")
+        if (Safety_Automation.state == ON) {
+            Alarm1_Relay.sendCommand(OFF)
+            Alarm1_Buzzer.sendCommand(OFF)
+        }
+    } else {
+        Safety_RiskLevel.postUpdate("Low")
+        if (Safety_Automation.state == ON) {
+            Alarm1_Relay.sendCommand(OFF)
+            Alarm1_Buzzer.sendCommand(OFF)
+        }
+    }
+end
