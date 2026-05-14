@@ -1,13 +1,13 @@
-# openHAB Lab 3 Configuration
+# Distributed Edge-Based Safety Monitoring Configuration
 
-This folder contains the openHAB configuration for a small MQTT-based lab setup. Use this README to start the system, open the UI, and troubleshoot the most common startup problems.
+This folder contains the openHAB configuration for the distributed edge-based safety monitoring project. Use this README to start the system, open the UI, and troubleshoot the most common startup problems.
 
 ## What Is Included
 
 - `things/mqtt.things` defines the MQTT broker and D1 Mini MQTT channels.
 - `items/lab3.items` defines the openHAB items shown in the UI and used by rules.
-- `rules/lab3.rules` toggles the relay when motion is detected and automation is enabled.
-- `sitemaps/lab3.sitemap` defines the Basic UI page.
+- `rules/lab3.rules` currently toggles the relay when motion is detected and automation is enabled.
+- `sitemaps/lab3.sitemap` defines the current Basic UI page.
 - `services/addons.cfg` installs the required openHAB add-ons on startup.
 
 For the system design and data flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -210,7 +210,7 @@ The relay shield uses:
 GPIO5 (D1) -> Relay1
 ```
 
-For the current step-by-step build, this relay can remain on ESP #1 as the existing Lab 3 test actuator. Later, the final alarm relay/buzzer should be placed on ESP #2 so openHAB can demonstrate device 1 triggering device 2.
+For the current step-by-step build, this relay can remain on ESP #1 as the existing test actuator. Later, the final alarm relay/buzzer should be placed on ESP #2 so openHAB can demonstrate device 1 triggering device 2.
 
 
 The current monitoring node also uses:

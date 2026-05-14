@@ -67,7 +67,7 @@ The current working monitoring-node setup is:
 ```text
 D4 / GPIO2 -> DS18x20 temperature sensor
 D2 / GPIO4 -> PIR motion sensor as Switch1
-D1 / GPIO5 -> Relay1 from the older lab setup, current test actuator
+D1 / GPIO5 -> Relay1, current test actuator
 D6 / GPIO12 -> Reed switch as Switch2
 ```
 
@@ -204,7 +204,7 @@ If Tasmota telemetry shows `"Switch2":"OFF"` but no `Switch2` change appears in 
 
 The alarm node should be separate from the monitoring node.
 
-During the step-by-step build, the old Lab 3 relay can stay on ESP #1 as a local test actuator. In the final architecture, the main alarm relay/buzzer should move to ESP #2 so that a sensor event on device 1 can trigger an actuator on device 2.
+During the step-by-step build, the relay can stay on ESP #1 as a local test actuator. In the final architecture, the main alarm relay/buzzer should move to ESP #2 so that a sensor event on device 1 can trigger an actuator on device 2.
 
 Recommended first version:
 

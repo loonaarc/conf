@@ -6,9 +6,9 @@ Tip: after pasting an image, keep the short caption below it. The captions can b
 
 ## 1. Monitoring Node Wiring
 
-![alt text](image-1.png)
+![Monitoring node wiring](docs/evidence/01-monitor-node-wiring.png)
 
-Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, the existing Lab 3 relay output on D1, and shared 3.3V/GND breadboard rails.
+Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, the existing relay output on D1, and shared 3.3V/GND breadboard rails.
 
 Status:
 
@@ -18,7 +18,7 @@ Captured: yes
 
 ## 2. Monitoring Node Tasmota Module Configuration
 
-![alt text](image-2.png)
+![Monitoring node Tasmota module configuration](docs/evidence/02-monitor-node-tasmota-module.png)
 
 Figure 2 shows the Tasmota GPIO configuration for ESP #1:
 
@@ -26,7 +26,7 @@ Figure 2 shows the Tasmota GPIO configuration for ESP #1:
 D2 / GPIO4  -> Switch1, PIR motion sensor
 D4 / GPIO2  -> DS18x20 temperature sensor
 D6 / GPIO12 -> Switch2, reed switch
-D1 / GPIO5  -> Relay1, existing lab relay
+D1 / GPIO5  -> Relay1, existing test relay
 ```
 
 Status:
@@ -37,7 +37,7 @@ Captured: yes
 
 ## 3. Tasmota Console: PIR And Reed Events
 
-![alt text](image-3.png)
+![Tasmota console with PIR and reed events](docs/evidence/03-tasmota-console-switch-events.png)
 
 Figure 3 shows the Tasmota console publishing `Switch1` events from the PIR sensor and `Switch2` events from the reed switch.
 
@@ -49,7 +49,7 @@ Captured: yes
 
 ## 4. MQTT Explorer: Switch Events
 
-![alt text](image-4.png)
+![MQTT Explorer switch result topic](docs/evidence/04-mqtt-explorer-switch-result.png)
 
 Figure 4 shows MQTT Explorer receiving switch events from the monitoring node under:
 
@@ -62,7 +62,7 @@ This proves that the sensor node publishes PIR and reed events to the MQTT broke
 Status:
 
 ```text
-Captured: no
+Captured: yes
 ```
 
 ## 5. MQTT Explorer: Temperature Sensor
@@ -83,11 +83,11 @@ Status:
 Captured: no
 ```
 
-## 6. openHAB Basic UI: Current Lab View
+## 6. openHAB Basic UI: Current Safety-Monitoring View
 
 Paste image here.
 
-Figure 6 shows the current openHAB Basic UI with the Lab 3 relay and motion items.
+Figure 6 shows the current openHAB Basic UI with the relay and motion items for the safety-monitoring project.
 
 Status:
 
