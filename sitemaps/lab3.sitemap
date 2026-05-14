@@ -1,0 +1,13 @@
+sitemap lab3 label="Lab 3"
+{
+    Frame label="Device"
+    {
+        Switch item=Relay label="Relay"
+        Text item=Motion label="Motion [%s]" icon="motion"
+    }
+
+    Frame label="Control"
+    {
+        Switch item=MotionAutomation label="Motion automation"
+    }
+}

@@ -1,13 +1,3 @@
-String Monitor1_Status "Monitor node [%s]" { channel="mqtt:topic:mosquitto:safety_monitor_1:lwt" }
-Switch Monitor1_Motion "PIR motion [%s]" { channel="mqtt:topic:mosquitto:safety_monitor_1:motion" }
-Switch Monitor1_Door "Door reed [%s]" { channel="mqtt:topic:mosquitto:safety_monitor_1:door" }
-
-String Alarm1_Status "Alarm node [%s]" { channel="mqtt:topic:mosquitto:safety_alarm_1:lwt" }
-Switch Alarm1_Relay "Alarm relay" { channel="mqtt:topic:mosquitto:safety_alarm_1:relay" }
-Switch Alarm1_Buzzer "Alarm buzzer" { channel="mqtt:topic:mosquitto:safety_alarm_1:buzzer" }
-
-String Advanced1_Status "Advanced node [%s]" { channel="mqtt:topic:mosquitto:safety_advanced_1:lwt" }
-
-Number Safety_RiskScore "Risk score [%d]"
-String Safety_RiskLevel "Risk level [%s]"
-Switch Safety_Automation "Automatic alarm"
+Switch Relay "Relay" { channel="mqtt:topic:d1mini:relay" }
+Switch Motion "Motion" { channel="mqtt:topic:d1mini:motion" }
+Switch MotionAutomation "Motion automation"

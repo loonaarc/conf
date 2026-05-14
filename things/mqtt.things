@@ -1,42 +1,24 @@
+/*
+Bridge -> connection to broker
+mqtt:broker -> MQTT binding
+mosquitto -> your broker name (you can choose it)
+host="localhost" -> your PC (Mosquitto runs locally)
+port=1883 -> default MQTT port
+*/
 Bridge mqtt:broker:mosquitto "MQTT Broker" [
     host="localhost",
     port=1883,
     secure=false
-] {
-    Thing topic safety_monitor_1 "Safety Monitor 1" {
-        Channels:
-            Type string : lwt "Monitor Online Status" [
-                stateTopic="tele/safety_monitor_1/LWT"
-            ]
-            Type switch : motion "PIR Motion" [
-                stateTopic="stat/safety_monitor_1/RESULT",
-                transformationPattern="JSONPATH:$.Switch1.Action"
-            ]
-            Type switch : door "Door Reed" [
-                stateTopic="stat/safety_monitor_1/RESULT",
-                transformationPattern="JSONPATH:$.Switch2.Action"
-            ]
-    }
+]
 
-    Thing topic safety_alarm_1 "Safety Alarm 1" {
-        Channels:
-            Type string : lwt "Alarm Online Status" [
-                stateTopic="tele/safety_alarm_1/LWT"
-            ]
-            Type switch : relay "Alarm Relay" [
-                stateTopic="stat/safety_alarm_1/POWER",
-                commandTopic="cmnd/safety_alarm_1/POWER"
-            ]
-            Type switch : buzzer "Alarm Buzzer" [
-                stateTopic="stat/safety_alarm_1/POWER2",
-                commandTopic="cmnd/safety_alarm_1/POWER2"
-            ]
-    }
-
-    Thing topic safety_advanced_1 "Safety Advanced 1" {
-        Channels:
-            Type string : lwt "Advanced Online Status" [
-                stateTopic="tele/safety_advanced_1/LWT"
-            ]
-    }
+Thing mqtt:topic:d1mini "D1 Mini Relay" (mqtt:broker:mosquitto) {
+    Channels:
+        Type switch : relay "Relay" [
+            stateTopic="stat/safety_monitor_1/POWER",
+            commandTopic="cmnd/safety_monitor_1/POWER"
+        ]
+        Type switch : motion "Motion" [
+            stateTopic="stat/safety_monitor_1/RESULT",
+            transformationPattern="JSONPATH:$.Switch1.Action"
+        ]
 }

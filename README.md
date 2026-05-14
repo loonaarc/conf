@@ -18,6 +18,8 @@ For breadboard, sensor, and pin wiring notes, see [WIRING_GUIDE.md](WIRING_GUIDE
 
 For final grading requirements and missing deliverables, see [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md).
 
+For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENCE.md).
+
 ## Requirements
 
 - openHAB 5.1.4 unpacked locally.
@@ -183,13 +185,16 @@ for /L %i in (2,1,254) do @ping -n 1 -w 10 192.168.43.%i >nul
 
 ## Pinout
 
-For the DS18B20 temperature sensor, hold the sensor with the flat side facing you and the legs pointing downward:
+For sensor and breadboard wiring details, including the DS18B20 temperature sensor, PIR sensor, and reed switch, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
+
+Project wiring convention:
 
 ```text
-Left   -> GND
-Middle -> DATA
-Right  -> VCC 3.3V
+D1 Mini 3V3 -> breadboard red power rail
+D1 Mini GND -> breadboard blue ground rail
 ```
+
+Use 3.3V for sensor modules in this project unless a specific module explicitly requires 5V.
 
 ## Tasmota Module Settings
 
@@ -205,6 +210,29 @@ The relay shield uses:
 GPIO5 (D1) -> Relay1
 ```
 
+For the current step-by-step build, this relay can remain on ESP #1 as the existing Lab 3 test actuator. Later, the final alarm relay/buzzer should be placed on ESP #2 so openHAB can demonstrate device 1 triggering device 2.
+
+
+The current monitoring node also uses:
+
+```text
+GPIO2  (D4) -> DS18x20
+GPIO4  (D2) -> Switch1
+GPIO12 (D6) -> Switch2
+```
+
+The reed module has been verified with a magnet. If Tasmota reports `Switch2` as `TOGGLE`, the input is working. For a cleaner openHAB door item later, use follow mode:
+
+```text
+SwitchMode2 1
+```
+
+If the displayed state is backwards, use inverted follow mode:
+
+```text
+SwitchMode2 2
+```
+
 After saving, the device restarts.
 
 Useful Tasmota console commands for the relay:
@@ -216,6 +244,8 @@ POWER TOGGLE
 ```
 
 The commands are not case-sensitive.
+
+If Tasmota shows `POWER ON/OFF` but the relay does not click, check the relay hardware wiring. When the relay shield was plugged directly on top of the D1 Mini, the shield pins likely provided signal, VCC, and GND automatically. On a breadboard, the relay needs its signal pin on `D1 / GPIO5`, plus the correct relay supply pin and shared GND.
 
 To print the full Tasmota status report:
 
@@ -339,6 +369,27 @@ Relay state:    stat/safety_monitor_1/POWER
 Relay command:  cmnd/safety_monitor_1/POWER
 Motion state:   stat/safety_monitor_1/RESULT
 ```
+
+For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
+
+1. Start Mosquitto.
+2. Open MQTT Explorer.
+3. Connect to the broker at `192.168.43.26` or `localhost`, port `1883`, depending on where MQTT Explorer is running.
+4. Trigger the PIR or reed switch.
+5. Check that `stat/safety_monitor_1/RESULT` changes.
+6. Check that the working DS18x20 sensor publishes temperature under `tele/safety_monitor_1/SENSOR`.
+
+Verified monitoring-node MQTT results:
+
+```text
+tele/safety_monitor_1/LWT = Online
+stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"ON"}}
+stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"OFF"}}
+stat/safety_monitor_1/RESULT includes Switch2 when the reed is triggered by a magnet
+tele/safety_monitor_1/SENSOR includes Switch1, Switch2, and DS18B20 temperature
+```
+
+If only `Switch1` updates immediately, that is still useful progress: the PIR path works. The reed switch creates `Switch2` messages on `stat/safety_monitor_1/RESULT` only when its digital output changes. If telemetry shows `"Switch2":"OFF"` but no change event appears, check the reed module `DO` pin, magnet position, shared GND, and the `GPIO12 (D6) -> Switch2` Tasmota setting.
 
 If your device has a different Tasmota topic, update `things/mqtt.things`.
 
