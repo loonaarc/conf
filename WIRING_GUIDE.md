@@ -1,9 +1,11 @@
 # Wiring Guide
 
-This guide is for the first hardware milestone:
+This guide documents the current hardware setup:
 
 ```text
-PIR + reed switch -> D1 Mini -> MQTT -> openHAB
+ESP #1 Safety Monitor  -> PIR + reed + temperature
+ESP #2 Safety Alarm    -> relay + PWM buzzer
+ESP #3 Safety Context  -> vibration + microphone + touch
 ```
 
 ## Breadboard Basics
@@ -58,7 +60,7 @@ The D1 Mini labels pins as `D1`, `D2`, etc. Internally, the ESP8266 uses GPIO nu
 | `D4` | GPIO2 | DS18x20 temperature sensor in the current lab setup |
 | `D6` | GPIO12 | Reed switch input |
 | `D5` | GPIO14 | Alternative PIR motion input |
-| `D7` | GPIO13 | Vibration or extra input |
+| `D7` | GPIO13 | Extra digital input |
 
 Avoid using `D3`, `D4`, and `D8` for beginner sensor wiring unless needed, because they can affect boot behavior if pulled to the wrong state.
 
@@ -267,6 +269,91 @@ cmnd/safety_alarm_1/POWER2
 
 Use `Dimmer 50` or MQTT payload `50` on `cmnd/safety_alarm_1/Dimmer` to sound the buzzer, and `OFF` on `cmnd/safety_alarm_1/POWER2` to stop it.
 
+## Safety Context Node
+
+ESP #3 is the safety context node. It adds secondary event sources so the final rule can become more interesting than a single sensor trigger.
+
+Current ESP #3 role:
+
+```text
+Topic -> safety_context_1
+Purpose -> vibration, loud-sound, and manual acknowledge input
+```
+
+Recommended wiring:
+
+| Component | Module pin | D1 Mini / breadboard |
+| --- | --- | --- |
+| Vibration sensor | `VCC` / `+` | red rail / `3V3` |
+| Vibration sensor | `GND` / `G` | blue rail / `GND` |
+| Vibration sensor | `DO` | `D1` / GPIO5 |
+| Microphone sensor | `VCC` / `+` | red rail / `3V3` |
+| Microphone sensor | `GND` / `G` | blue rail / `GND` |
+| Microphone sensor | `AO` | `A0` / GPIO17 |
+| Microphone sensor | `DO` | not used |
+| Touch sensor | `VCC` | red rail / `3V3` |
+| Touch sensor | `GND` | blue rail / `GND` |
+| Touch sensor | `SIG` | `D5` / GPIO14 |
+
+The microphone uses the analog `AO` output because it is more useful for later TinyML-style sound-level experiments than a simple threshold switch.
+
+The touch sensor is a manual input. It can later be used as an acknowledge, silence, arm, or disarm button in openHAB.
+
+Recommended ESP #3 Tasmota module settings:
+
+```text
+Module type -> Generic
+GPIO5 (D1) -> Switch1   vibration
+GPIO4 (D2) -> None
+GPIO14 (D5) -> Switch2  touch / acknowledge
+GPIO17 (A0) -> ADC Input / Analog, microphone AO
+Topic      -> safety_context_1
+```
+
+Expected MQTT topics:
+
+```text
+stat/safety_context_1/RESULT
+tele/safety_context_1/SENSOR
+```
+
+Example payloads:
+
+```json
+{"Switch1":{"Action":"ON"}}
+{"Switch2":{"Action":"ON"}}
+{"ANALOG":{"A0":61}}
+```
+
+The verified ESP #3 context-node command set is:
+
+```text
+SetOption114 1
+SwitchMode1 1
+SwitchMode2 1
+```
+
+`SetOption114 1` detaches the switch inputs from Tasmota's default power-output behavior. This is important for ESP #3 because it is a sensor-only context node, not an actuator node.
+
+If touching the touch sensor publishes generic `POWER` messages instead of `Switch2` action messages, run the verified command set again:
+
+```text
+SetOption114 1
+SwitchMode1 1
+SwitchMode2 1
+```
+
+Then test again. The desired result is:
+
+```text
+stat/safety_context_1/RESULT = {"Switch2":{"Action":"ON"}}
+stat/safety_context_1/RESULT = {"Switch2":{"Action":"OFF"}}
+```
+
+The generic `POWER` topic is normal Tasmota wording, but it is confusing in this project because only ESP #2 is supposed to be an actuator node. For ESP #3, prefer `Switch1` and `Switch2` messages plus `ANALOG.A0` telemetry.
+
+Use the blue potentiometer on the vibration module to adjust the digital threshold. The microphone is currently analog, so it should be checked by watching whether `ANALOG.A0` changes when the sound level changes.
+
 ## First Wiring Target
 
 Build only the monitoring node first:
@@ -300,6 +387,11 @@ Switch2 in telemetry: yes
 Reed change event: yes, publishes Switch2 when triggered by magnet
 ESP #2 relay on safety_alarm_1: yes, clicks when toggled in Tasmota
 ESP #2 buzzer on safety_alarm_1: yes, works with PWM1 and Dimmer 50
+ESP #3 context node on safety_context_1: wired with vibration, microphone, and touch sensors
+ESP #3 context switch behavior: fixed with SetOption114 1 + SwitchMode1/2 1
+ESP #3 touch sensor: verified as clean Switch2 action after switch detach
+ESP #3 microphone: visible as analog telemetry under ANALOG.A0
+ESP #3 vibration: visible in telemetry, not yet verified as clean event trigger
 ```
 
 Important MQTT Explorer note:
@@ -307,4 +399,4 @@ Important MQTT Explorer note:
 - `stat/safety_monitor_1/RESULT` updates immediately when `Switch1` or `Switch2` changes.
 - `tele/safety_monitor_1/SENSOR` is periodic. With the current `TelePeriod` of 300 seconds, temperature may only update about every 5 minutes unless Tasmota is restarted or telemetry is requested.
 
-The core final-check build only needs the monitoring node and the alarm node to be stable. The advanced node can be added after that, and the fourth D1 Mini is optional if it cannot be recovered.
+The core final-check build only needs the monitoring node and the alarm node to be stable. The context node can be added after that, and the fourth D1 Mini is optional if it cannot be recovered.

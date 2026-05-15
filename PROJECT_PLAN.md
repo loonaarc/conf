@@ -27,8 +27,9 @@ Current order:
 5. Add the alarm node with buzzer and/or relay.
 6. Implement the first cross-device rule.
 7. Implement the first risk-score rule.
-8. Add vibration and sound sensors.
-9. Later, use collected data for a TinyML experiment.
+8. Add vibration and sound sensors on ESP #3.
+9. Integrate ESP #3 events into openHAB.
+10. Later, use collected data for a TinyML experiment.
 
 For the mid-term check, prioritize the second D1 Mini before polishing the risk score. The mid-term requirements explicitly ask for two D1 Mini devices with at least one actuator or sensor per device and MQTT access for both devices.
 
@@ -40,8 +41,8 @@ Available modules and hardware priorities are documented in [HARDWARE_INVENTORY.
 | --- | --- | --- | --- |
 | ESP #1 | Monitoring node | PIR, reed switch | Detect motion and door/window opening |
 | ESP #2 | Alarm node | Relay, PWM-controlled buzzer | React to alerts from openHAB |
-| ESP #3 | Advanced sensor node | Vibration sensor, microphone | Detect shock and loud/distress-like sound |
-| ESP #4 | Optional context/status node | Built-in LED first, optional extra sensor later | Optional extension if the fourth board works |
+| ESP #3 | Safety context node | Vibration sensor, microphone, touch sensor | Detect shock/loud sound and provide manual acknowledge input |
+| ESP #4 | Optional auxiliary/status node | Built-in LED first, optional extra sensor later | Optional extension if the fourth board works |
 
 ## Recommended Device Names
 
@@ -51,8 +52,8 @@ Use clear Tasmota topics instead of the default generated topic names.
 | --- | --- |
 | Monitoring node | `safety_monitor_1` |
 | Alarm node | `safety_alarm_1` |
-| Advanced sensor node | `safety_advanced_1` |
-| Optional context/status node | `safety_context_1` |
+| Safety context node | `safety_context_1` |
+| Optional auxiliary/status node | `safety_aux_1` |
 
 In Tasmota, set the MQTT topic under:
 
@@ -72,8 +73,8 @@ Keep a small inventory table while identifying the boards:
 | --- | --- | --- | --- | --- |
 | Monitoring node | `safety_monitor_1` | `192.168.43.223` | `A8:48:FA:C1:7D:DD` | ESP #1, label `1`, PIR + reed |
 | Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay + PWM buzzer |
-| Advanced node | `safety_advanced_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone |
-| Optional context/status node | `safety_context_1` | not working yet | TBD | optional extension |
+| Safety context node | `safety_context_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone + touch |
+| Optional auxiliary/status node | `safety_aux_1` | not working yet | TBD | optional extension |
 
 The fourth D1 Mini is useful but not required for the core project. The final check requires at least two D1 Mini devices with sensors/actuators. The stable core should therefore use ESP #1 as monitoring node and ESP #2 as alarm node. ESP #3 adds extra sensor capability, and ESP #4 remains an optional extension if it can be recovered later.
 
@@ -126,7 +127,7 @@ This D1 Mini will be used as the actuator/alarm node.
 | HTTP API | Enabled |
 | Planned actuators | relay working, buzzer working with `PWM1` / `Dimmer 50` |
 
-### ESP #3: Safety Advanced 1
+### ESP #3: Safety Context 1
 
 This D1 Mini was flashed with Tasmotizer and configured through `Send config`.
 
@@ -134,8 +135,8 @@ This D1 Mini was flashed with Tasmotizer and configured through `Send config`.
 | --- | --- |
 | Physical label | `3` |
 | Tasmota module | `Sonoff Basic` |
-| Device name | `Safety Advanced 1` |
-| Friendly name | `Safety Advanced 1` |
+| Device name | `Safety Context 1` |
+| Friendly name | `Safety Context 1` |
 | Tasmota version | `15.3.0 (release-tasmota)` |
 | Hostname | `safety-advanced-1-4763` |
 | MAC address | `EC:64:C9:DF:12:9B` |
@@ -145,10 +146,10 @@ This D1 Mini was flashed with Tasmotizer and configured through `Send config`.
 | MQTT port | `1883` |
 | MQTT user | `DVES_USER` |
 | MQTT client | `DVES_DF129B` |
-| MQTT topic | `safety_advanced_1` |
-| MQTT full topic | `cmnd/safety_advanced_1/` |
+| MQTT topic | `safety_context_1` |
+| MQTT full topic | `cmnd/safety_context_1/` |
 | HTTP API | Enabled |
-| Planned sensors | vibration sensor, microphone, optional TinyML experiment later |
+| Sensors | vibration sensor, microphone, touch sensor, optional TinyML experiment later |
 
 ## MQTT Topic Design
 
@@ -170,6 +171,7 @@ stat/safety_monitor_1/RESULT
 cmnd/safety_alarm_1/POWER
 cmnd/safety_alarm_1/POWER2
 cmnd/safety_alarm_1/Dimmer
+stat/safety_context_1/RESULT
 ```
 
 Meaning:
@@ -270,8 +272,8 @@ The Lab 4 mid-term check is a status check, not the final project. The project s
 | Devices 1 and 2 MQTT access | ESP #1 proven; ESP #2 should be shown in MQTT Explorer with `safety_alarm_1` |
 | openHAB installed | Done |
 | Basic UI sitemap | `safety_monitor` sitemap exists |
-| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay/buzzer should be added next |
-| Manual actuator action in UI | Next target: manually control ESP #2 relay/buzzer from openHAB |
+| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay/buzzer controls added |
+| Manual actuator action in UI | ESP #2 relay/buzzer can be controlled from openHAB |
 | External webservice via HTTP binding | Missing, add after ESP #2 manual control |
 | Basic openHAB rules | Started; next useful rule should trigger ESP #2 |
 
@@ -283,7 +285,27 @@ ESP #2 actuator manually controllable from openHAB
 optional rule: ESP #1 event triggers ESP #2 actuator
 ```
 
-ESP #2 now has the relay. Next, move openHAB relay control from `safety_monitor_1` to `safety_alarm_1`. After openHAB can control ESP #2, clean ESP #1 by removing its old relay GPIO setting so ESP #1 becomes sensor-only.
+ESP #2 now has the relay and PWM buzzer, and openHAB has separate relay, buzzer power, and buzzer level items for `safety_alarm_1`. ESP #1 should remain sensor-only.
+
+ESP #3 is now wired as the safety context node with vibration, microphone, and touch modules. For the mid-term, ESP #3 can be shown as extra progress. For the final project, it should become part of the risk-score and acknowledgement flow:
+
+```text
+PIR or reed event from ESP #1
++ vibration event or high analog sound value from ESP #3
+-> higher risk score
+-> relay/buzzer command to ESP #2
+
+touch event from ESP #3
+-> acknowledge, silence, arm, or disarm action in openHAB
+```
+
+The context-node switch inputs are detached from Tasmota's default `POWER` behavior with:
+
+```text
+SetOption114 1
+SwitchMode1 1
+SwitchMode2 1
+```
 
 ## TinyML Extension Later
 
@@ -294,7 +316,7 @@ Potential later use:
 - anomaly detection
 - event classification
 - sound/vibration pattern classification
-- edge inference on an advanced node
+- edge inference on the safety context node
 
 Possible comparison:
 

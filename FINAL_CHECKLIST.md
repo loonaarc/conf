@@ -45,8 +45,8 @@ These items can improve the grade if there is time.
 | --- | --- | --- |
 | ESP #1 | Monitoring node | `safety_monitor_1` |
 | ESP #2 | Alarm node | `safety_alarm_1` |
-| ESP #3 | Disturbance/advanced node | `safety_advanced_1` |
-| ESP #4 | Optional context/status node | `safety_context_1` |
+| ESP #3 | Safety context node | `safety_context_1` |
+| ESP #4 | Optional auxiliary/status node | `safety_aux_1` |
 
 ## Documentation Evidence To Collect
 

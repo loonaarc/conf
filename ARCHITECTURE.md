@@ -17,51 +17,54 @@ ESP #1 sensors
 The next larger milestone is:
 
 ```text
-ESP #1 sensor event
+ESP #1 or ESP #3 sensor event
   -> MQTT
   -> openHAB rule
   -> MQTT command
   -> ESP #2 alarm actuator
 ```
 
-That later step proves that one D1 Mini device can trigger a second D1 Mini device.
+That step proves that one D1 Mini device can trigger a second D1 Mini device, while a third D1 Mini adds extra context for a stronger risk score.
 
 ## System Components
 
 ```text
-+-----------------------------+
-| ESP #1 Safety Monitor Node  |
-| Tasmota topic:              |
-| safety_monitor_1            |
-|                             |
-| D2 -> PIR / Switch1         |
-| D6 -> Reed / Switch2        |
-| D4 -> DS18B20 temperature   |
-+--------------+--------------+
-               |
-               | MQTT
-               v
-+--------------+--------------+
-| Mosquitto MQTT broker       |
-| host: localhost for openHAB |
-| port: 1883                  |
-+--------------+--------------+
-               ^
-               |
-               | MQTT binding
-               v
-+--------------+--------------+
-| openHAB                     |
-| Things / Items / Rules      |
-| Basic UI sitemap            |
-+--------------+--------------+
-               |
-               | user view/control
-               v
-+--------------+--------------+
-| Browser / Basic UI          |
-| sitemap=safety_monitor      |
-+-----------------------------+
++-----------------------------+        +-----------------------------+
+| ESP #1 Safety Monitor Node  |        | ESP #3 Safety Context Node  |
+| topic: safety_monitor_1     |        | topic: safety_context_1     |
+| D2 -> PIR / Switch1         |        | D1 -> Vibration / Switch1   |
+| D6 -> Reed / Switch2        |        | D5 -> Touch / Switch2       |
+| D4 -> DS18B20 temperature   |        | A0 -> Microphone analog     |
+|                             |        +--------------+--------------+
++--------------+--------------+                       |
+               |                                      |
+               +------------------+-------------------+
+                                  |
+                                  | MQTT events
+                                  v
+                    +-------------+-------------+
+                    | Mosquitto MQTT broker     |
+                    | host: localhost for       |
+                    | openHAB, port: 1883       |
+                    +-------------+-------------+
+                                  ^
+                                  |
+                                  | MQTT binding
+                                  v
+                    +-------------+-------------+
+                    | openHAB                   |
+                    | Things / Items / Rules    |
+                    | Basic UI sitemap          |
+                    +------+------+-------------+
+                           |     |
+              user view    |     | MQTT commands
+              / control    v     v
+             +-------------+     +-----------------------------+
+             | Browser /   |     | ESP #2 Safety Alarm Node    |
+             | Basic UI    |     | topic: safety_alarm_1       |
+             +-------------+     | D1 -> Relay1                |
+                                 | D5 -> PWM1 buzzer           |
+                                 +-----------------------------+
 ```
 
 MQTT Explorer is used beside openHAB as a debugging and evidence tool. It connects to the same broker and shows the raw Tasmota topics before openHAB transforms them into Items.
@@ -89,10 +92,12 @@ This keeps the configuration inspectable and suitable for documentation/screensh
 
 ## MQTT Topics
 
-Tasmota uses the topic name:
+The Tasmota nodes use these topic names:
 
 ```text
 safety_monitor_1
+safety_alarm_1
+safety_context_1
 ```
 
 Important topics:
@@ -101,8 +106,12 @@ Important topics:
 tele/safety_monitor_1/LWT
 tele/safety_monitor_1/SENSOR
 stat/safety_monitor_1/RESULT
-stat/safety_monitor_1/POWER
-cmnd/safety_monitor_1/POWER
+stat/safety_context_1/RESULT
+tele/safety_context_1/SENSOR
+stat/safety_alarm_1/POWER
+cmnd/safety_alarm_1/POWER
+cmnd/safety_alarm_1/Dimmer
+cmnd/safety_alarm_1/POWER2
 ```
 
 Meaning:
@@ -112,6 +121,8 @@ Meaning:
 | `tele/safety_monitor_1/LWT` | Tasmota -> MQTT | Online/offline status |
 | `tele/safety_monitor_1/SENSOR` | Tasmota -> MQTT | Periodic sensor telemetry, including DS18B20 temperature |
 | `stat/safety_monitor_1/RESULT` | Tasmota -> MQTT | Immediate switch events from PIR/reed |
+| `stat/safety_context_1/RESULT` | Tasmota -> MQTT | Immediate switch events from vibration and touch |
+| `tele/safety_context_1/SENSOR` | Tasmota -> MQTT | Periodic context telemetry, including microphone `ANALOG.A0` |
 | `stat/safety_alarm_1/POWER` | Tasmota -> MQTT | ESP #2 relay state |
 | `cmnd/safety_alarm_1/POWER` | openHAB/MQTT -> Tasmota | ESP #2 relay command |
 | `cmnd/safety_alarm_1/Dimmer` | openHAB/MQTT -> Tasmota | ESP #2 PWM buzzer intensity |
@@ -123,7 +134,8 @@ Meaning:
 
 ```text
 Bridge mqtt:broker:mosquitto
-Thing mqtt:topic:d1mini
+Thing mqtt:topic:safety_monitor_1
+Thing mqtt:topic:safety_alarm_1
 ```
 
 The bridge connects openHAB to Mosquitto on:
@@ -132,15 +144,29 @@ The bridge connects openHAB to Mosquitto on:
 localhost:1883
 ```
 
-The `d1mini` Thing currently represents ESP #1 and exposes the sensor channels. The relay and buzzer have physically moved to ESP #2, so the next openHAB integration step is to add alarm-node channels for `safety_alarm_1`.
+The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor channels. The `safety_alarm_1` Thing represents ESP #2 and exposes the relay and buzzer actuator channels. ESP #3 is wired in hardware and should be added to openHAB next as `safety_context_1`.
 
 | Channel | MQTT topic | Transformation | Meaning |
 | --- | --- | --- | --- |
-| `relay` | currently still configured for `safety_monitor_1`; should move to `safety_alarm_1` next | none | Reads and commands the alarm relay |
-| alarm buzzer, next | `cmnd/safety_alarm_1/Dimmer` and `cmnd/safety_alarm_1/POWER2` | none | Sounds/stops the PWM buzzer |
 | `motion` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch1.Action` | PIR motion from Switch1 |
 | `door` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch2.Action` | Reed switch from Switch2 |
 | `temperature` | `tele/safety_monitor_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
+| `relay` | `stat/safety_alarm_1/POWER`, `cmnd/safety_alarm_1/POWER` | none | Reads and commands the alarm relay |
+| `buzzerPower` | `stat/safety_alarm_1/POWER2`, `cmnd/safety_alarm_1/POWER2` | none | Stops or enables the PWM buzzer output |
+| `buzzerLevel` | `cmnd/safety_alarm_1/Dimmer` | none | Sends the PWM buzzer intensity |
+| context vibration, next | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch1.Action` | Vibration event from ESP #3 |
+| context touch, next | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch2.Action` | Manual acknowledge/silence input from ESP #3 |
+| context microphone, next | `tele/safety_context_1/SENSOR` | `JSONPATH:$.ANALOG.A0` | Analog microphone value from ESP #3 |
+
+The context node should not be treated as an actuator. Its switch inputs are detached from Tasmota's default power-control behavior with:
+
+```text
+SetOption114 1
+SwitchMode1 1
+SwitchMode2 1
+```
+
+The intended integration is based on `Switch1` and `Switch2` sensor events plus `ANALOG.A0` telemetry.
 
 The reed switch originally produced `TOGGLE` actions. The Tasmota command below was needed so openHAB receives clean `ON` and `OFF` states:
 
@@ -154,10 +180,12 @@ SwitchMode2 1
 
 | Item | Type | Source |
 | --- | --- | --- |
-| `Relay` | `Switch` | MQTT relay channel, next target is ESP #2 |
+| `Relay` | `Switch` | ESP #2 MQTT relay channel |
 | `Motion` | `Switch` | PIR / Switch1 channel |
 | `Door` | `Switch` | Reed / Switch2 channel |
 | `Temperature` | `Number` | DS18B20 temperature channel |
+| `Buzzer` | `Switch` | ESP #2 buzzer power channel |
+| `BuzzerLevel` | `Dimmer` | ESP #2 buzzer PWM level channel |
 | `MotionAutomation` | `Switch` | Local openHAB control, not MQTT-linked |
 
 Items are the values that the UI displays and the rules use.
@@ -172,7 +200,8 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
 
 The current UI shows:
 
-- relay switch, next target is ESP #2
+- relay switch for ESP #2
+- buzzer switch and buzzer level slider for ESP #2
 - PIR motion state
 - reed/door state
 - DS18B20 temperature
@@ -192,7 +221,7 @@ If `MotionAutomation` is ON, the current rule toggles the relay item:
 Motion ON -> openHAB rule -> Relay command
 ```
 
-The relay and buzzer hardware have moved to ESP #2. The next config step is to add `safety_alarm_1` actuator channels, then remove the old relay setting from ESP #1.
+The relay and buzzer hardware have moved to ESP #2. The next rule step is to command ESP #2 when ESP #1 or ESP #3 reports a risky event.
 
 ## Helper Script
 

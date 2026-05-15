@@ -20,16 +20,9 @@ Bridge mqtt:broker:mosquitto "MQTT Broker" [
 
 // Thing = logical MQTT device in openHAB.
 // This represents ESP #1, the Tasmota monitoring node with topic safety_monitor_1.
-Thing mqtt:topic:d1mini "Safety Monitor Node" (mqtt:broker:mosquitto) {
+Thing mqtt:topic:safety_monitor_1 "Safety Monitor Node" (mqtt:broker:mosquitto) {
     Channels:
-        // Relay channel.
-        // Reads relay state from Tasmota and sends relay commands back to Tasmota.
-        Type switch : relay "Relay" [
-            // Tasmota publishes relay state here, for example ON or OFF.
-            stateTopic="stat/safety_monitor_1/POWER",
-            // openHAB publishes commands here when the Relay item is switched.
-            commandTopic="cmnd/safety_monitor_1/POWER"
-        ]
+        
 
         // PIR motion channel.
         // Tasmota publishes Switch1 events to the RESULT topic.
@@ -57,4 +50,29 @@ Thing mqtt:topic:d1mini "Safety Monitor Node" (mqtt:broker:mosquitto) {
             // Extracts the numeric temperature value from the DS18B20 object.
             transformationPattern="JSONPATH:$.DS18B20.Temperature"
         ]
+}
+
+Thing mqtt:topic:safety_alarm_1 "Safety Alarm Node" (mqtt:broker:mosquitto) {
+    Channels:
+    // Relay channel.
+        // Reads relay state from Tasmota and sends relay commands back to Tasmota.
+        Type switch : relay "Relay" [
+            // Tasmota publishes relay state here, for example ON or OFF.
+            stateTopic="stat/safety_alarm_1/POWER",
+            // openHAB publishes commands here when the Relay item is switched.
+            commandTopic="cmnd/safety_alarm_1/POWER"
+        ]
+
+        // Buzzer channel.
+        // openHAB can publish commands here to control the buzzer on ESP #2.
+        Type switch : buzzerPower "Buzzer Power" [
+            stateTopic="stat/safety_alarm_1/POWER2",
+            commandTopic="cmnd/safety_alarm_1/POWER2"
+        ]
+
+        Type dimmer : buzzerLevel "Buzzer Level" [
+            commandTopic="cmnd/safety_alarm_1/Dimmer"
+        ]
+
+    
 }

@@ -29,8 +29,8 @@ For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENC
 - openHAB 5.1.4 unpacked locally.
 - Java available for openHAB.
 - Mosquitto MQTT broker running on the same machine.
-- A Tasmota device reachable by MQTT.
-- The first renamed monitoring-node MQTT topic: `safety_monitor_1`.
+- Tasmota devices reachable by MQTT.
+- The current project MQTT topics: `safety_monitor_1`, `safety_alarm_1`, and `safety_context_1`.
 - Visual Studio Code with the openHAB extension is useful for editing the configuration files.
 
 The required openHAB add-ons are configured in `services/addons.cfg`:
@@ -103,15 +103,15 @@ For the lab network, the Wi-Fi SSID used by the first D1 was:
 realme C3
 ```
 
-For the advanced node, the following `Send config` values were used successfully:
+For the context node, the following `Send config` values were used successfully:
 
 ```text
 Wi-Fi SSID:      realme C3
 MQTT host:       192.168.43.26
 MQTT port:       1883
-MQTT topic:      safety_advanced_1
+MQTT topic:      safety_context_1
 MQTT full topic: %prefix%/%topic%/
-Friendly name:   Safety Advanced 1
+Friendly name:   Safety Context 1
 MQTT user:       empty
 MQTT password:   empty
 ```
@@ -231,6 +231,16 @@ The alarm node relay uses:
 ESP #2 topic: safety_alarm_1
 GPIO5 (D1) -> Relay1
 GPIO14 (D5) -> PWM1, buzzer
+```
+
+The context node uses:
+
+```text
+ESP #3 topic: safety_context_1
+GPIO5 (D1) -> Switch1, vibration sensor
+GPIO4 (D2) -> None
+GPIO14 (D5) -> Switch2, touch / acknowledge sensor
+GPIO17 (A0) -> ADC Input / Analog, microphone AO
 ```
 
 The buzzer did not behave like a simple active buzzer. It only clicked when configured as a relay-style output, but worked after setting `GPIO14 (D5) -> PWM1`. Useful Tasmota console commands:
@@ -408,6 +418,8 @@ Relay command:  cmnd/safety_alarm_1/POWER
 Buzzer command: cmnd/safety_alarm_1/Dimmer
 Buzzer off:     cmnd/safety_alarm_1/POWER2
 Motion state:   stat/safety_monitor_1/RESULT
+Context events: stat/safety_context_1/RESULT
+Context sensor: tele/safety_context_1/SENSOR
 ```
 
 For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
@@ -418,6 +430,10 @@ For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
 4. Trigger the PIR or reed switch.
 5. Check that `stat/safety_monitor_1/RESULT` changes.
 6. Check that the working DS18x20 sensor publishes temperature under `tele/safety_monitor_1/SENSOR`.
+7. Trigger the vibration or touch sensor.
+8. Check that `stat/safety_context_1/RESULT` changes.
+9. Make sound near the microphone.
+10. Check whether `tele/safety_context_1/SENSOR` shows a changing `ANALOG.A0` value.
 
 Verified monitoring-node MQTT results:
 
@@ -427,7 +443,19 @@ stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"ON"}}
 stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"OFF"}}
 stat/safety_monitor_1/RESULT includes Switch2 when the reed is triggered by a magnet
 tele/safety_monitor_1/SENSOR includes Switch1, Switch2, and DS18B20 temperature
+stat/safety_context_1/RESULT includes Switch1 for vibration and Switch2 for touch events
+tele/safety_context_1/SENSOR includes ANALOG.A0 for the microphone
 ```
+
+For the context node, use this verified Tasmota console command set:
+
+```text
+SetOption114 1
+SwitchMode1 1
+SwitchMode2 1
+```
+
+`SetOption114 1` detaches the sensor switches from Tasmota's default power behavior. The goal is to see `Switch1` and `Switch2` action messages instead of `POWER` messages for the context node.
 
 If only `Switch1` updates immediately, that is still useful progress: the PIR path works. The reed switch creates `Switch2` messages on `stat/safety_monitor_1/RESULT` only when its digital output changes. If telemetry shows `"Switch2":"OFF"` but no change event appears, check the reed module `DO` pin, magnet position, shared GND, and the `GPIO12 (D6) -> Switch2` Tasmota setting.
 
@@ -472,9 +500,10 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
 ## How To Use It
 
 1. Open the Basic UI sitemap.
-2. Use `Relay` to manually switch the Tasmota relay.
+2. Use `Relay` to manually switch the ESP #2 Tasmota relay.
 3. Watch `Motion` to see motion state updates from MQTT.
-4. Enable `Motion automation` if motion should toggle the relay.
+4. Use `Buzzer` and `Buzzer level` to test the ESP #2 PWM buzzer.
+5. Enable `Motion automation` if motion should toggle the relay.
 
 When `Motion automation` is ON and the `Motion` item changes to ON, the rule in `rules/safety_monitor.rules` toggles the relay.
 

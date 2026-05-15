@@ -6,9 +6,9 @@ Tip: after pasting an image, keep the short caption below it. The captions can b
 
 ## 1. Monitoring Node Wiring
 
-![Monitoring node wiring](docs/evidence/01-monitor-node-wiring.png)
+![Monitoring node current wiring](docs/evidence/01-monitor-node-wiring-current.png)
 
-Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, the existing relay output on D1, and shared 3.3V/GND breadboard rails.
+Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, and shared 3.3V/GND breadboard rails.
 
 Status:
 
@@ -18,15 +18,13 @@ Captured: yes
 
 ## 2. Monitoring Node Tasmota Module Configuration
 
-![Monitoring node Tasmota module configuration](docs/evidence/02-monitor-node-tasmota-module.png)
-
+![Monitoring node current Tasmota module configuration](docs/evidence/02-monitor-node-tasmota-current.png)
 Figure 2 shows the Tasmota GPIO configuration for ESP #1:
 
 ```text
 D2 / GPIO4  -> Switch1, PIR motion sensor
 D4 / GPIO2  -> DS18x20 temperature sensor
 D6 / GPIO12 -> Switch2, reed switch
-D1 / GPIO5  -> Relay1, existing test relay
 ```
 
 Status:
@@ -83,11 +81,102 @@ Status:
 Captured: yes
 ```
 
-## 6. openHAB Basic UI: Current Safety-Monitoring View
+## 6. Alarm Node Wiring
 
-![alt text](image.png)
+![Alarm node wiring](docs/evidence/06-alarm-node-wiring.png)
 
-Figure 6 shows the current openHAB Basic UI with the relay and motion items for the safety-monitoring project.
+Figure 6 shows ESP #2, the alarm node, connected to the relay and PWM buzzer actuator.
+
+Status:
+
+```text
+Captured: yes
+```
+
+## 7. Alarm Node Tasmota Module Configuration
+
+![Alarm node Tasmota module configuration](docs/evidence/07-alarm-node-tasmota-module.png)
+
+Figure 7 shows the Tasmota GPIO configuration for ESP #2:
+
+```text
+D1 / GPIO5  -> Relay1
+D5 / GPIO14 -> PWM1 buzzer
+Topic       -> safety_alarm_1
+```
+
+Status:
+
+```text
+Captured: yes
+```
+
+## 8. Safety Context Node Wiring
+
+![Safety context node wiring](docs/evidence/08-context-node-wiring.png)
+
+Figure 8 shows ESP #3, the safety context node, connected to the vibration sensor, microphone module, and touch sensor.
+
+Status:
+
+```text
+Captured: yes
+```
+
+## 9. Safety Context Node Tasmota Module Configuration
+
+![Safety context node current Tasmota module configuration](docs/evidence/09-context-node-tasmota-current.png)
+Figure 9 shows the Tasmota GPIO configuration for ESP #3:
+
+```text
+D1 / GPIO5 -> Switch1, vibration sensor
+D2 / GPIO4 -> None
+D5 / GPIO14 -> Switch2, touch / acknowledge sensor
+A0 / GPIO17 -> ADC Input / Analog, microphone AO
+Topic      -> safety_context_1
+```
+
+Status:
+
+```text
+Captured: yes
+```
+
+## 10. MQTT Explorer: Context Sensor Events And Telemetry
+
+![Safety context node telemetry](docs/evidence/10-context-node-telemetry-current.png)
+
+Figure 10 shows MQTT Explorer receiving context-node sensor events and analog microphone telemetry under:
+
+```text
+stat/safety_context_1/RESULT
+tele/safety_context_1/SENSOR
+```
+
+Status:
+
+```text
+Captured: yes
+```
+
+Current observation:
+
+```text
+tele/safety_context_1/SENSOR includes Switch1, Switch2, and ANALOG.A0
+SetOption114 1 detached the context-node switches from generic POWER behavior
+SwitchMode1 1 and SwitchMode2 1 were applied
+touch sensor now publishes clean Switch2 action messages
+microphone is available as analog A0 telemetry
+vibration is not yet verified as a clean Switch1 action
+```
+
+This proves the context node is online, the touch input is working as a clean MQTT switch event, and the microphone analog value is visible in telemetry. The vibration threshold still needs tuning before openHAB integration.
+
+## 11. openHAB Basic UI: Current Safety-Monitoring View
+
+Paste image here.
+
+Figure 11 shows the current openHAB Basic UI with the monitoring sensors and ESP #2 relay/buzzer controls.
 
 Status:
 
@@ -95,35 +184,11 @@ Status:
 Captured: no
 ```
 
-## 7. Alarm Node Wiring
+## 12. Device 1 Or 3 Triggers Device 2
 
 Paste image here.
 
-Figure 7 shows ESP #2, the alarm node, connected to its relay and/or buzzer actuator.
-
-Status:
-
-```text
-Captured: no
-```
-
-## 8. Alarm Node Tasmota Module Configuration
-
-Paste image here.
-
-Figure 8 shows the Tasmota GPIO configuration for ESP #2, the alarm actuator node.
-
-Status:
-
-```text
-Captured: no
-```
-
-## 9. Device 1 Triggers Device 2
-
-Paste image here.
-
-Figure 9 shows the final distributed automation: an event from ESP #1 is received by openHAB and causes an actuator output on ESP #2.
+Figure 12 shows the final distributed automation: an event from ESP #1 or ESP #3 is received by openHAB and causes an actuator output on ESP #2.
 
 Status:
 
@@ -138,6 +203,8 @@ The final proof chain for the project is:
 ```text
 PIR/reed sensor
   -> Tasmota on ESP #1
+vibration/sound/touch sensor
+  -> Tasmota on ESP #3
   -> MQTT broker
   -> openHAB item/rule
   -> MQTT command

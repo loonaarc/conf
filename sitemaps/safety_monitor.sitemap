@@ -12,8 +12,7 @@ sitemap safety_monitor label="Safety Monitor"
     // Device frame shows live sensor values and the test relay.
     Frame label="Device"
     {
-        // Manual relay control; this should click the relay shield.
-        Switch item=Relay label="Relay"
+        
 
         // PIR state from Switch1.
         Text item=Motion label="Motion [%s]" icon="motion"
@@ -30,5 +29,11 @@ sitemap safety_monitor label="Safety Monitor"
     {
         // Enables or disables the rule that toggles the relay on motion.
         Switch item=MotionAutomation label="Motion automation"
+
+        Switch item=Buzzer label="Buzzer"
+        Slider item=BuzzerLevel label="Buzzer level"
+
+        // Manual relay control; this should click the relay shield.
+        Switch item=Relay label="Relay"
     }
 }

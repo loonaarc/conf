@@ -6,7 +6,7 @@ This file lists the available hardware modules and how they fit into the safety-
 
 | # | Module | How to recognize it | Purpose | Project priority |
 | --- | --- | --- | --- | --- |
-| 1 | TTP223 touch sensor module | Blue board, large finger/spiral symbol, pins `VCC`, `GND`, `SIG` | Capacitive touch input, button replacement | Ignore for now |
+| 1 | TTP223 touch sensor module | Blue board, large finger/spiral symbol, pins `VCC`, `GND`, `SIG` | Capacitive touch input, button replacement | Wired on ESP #3 as manual input |
 | 2 | SW-520D tilt sensor module | Small black board, blue potentiometer, cylindrical tilt sensor | Detects tilt/movement as digital signal | Ignore for now |
 | 3 | KY-025 reed switch / magnetic sensor | Red board, visible glass reed tube, often one screw hole | Door/window open/closed with magnet | Must-have, already used |
 | 4 | KY-037 / KY-038 sound sensor | Red board, silver round microphone, blue potentiometer | Detects loud sound; digital threshold and analog output | Must-have later / TinyML candidate |
@@ -43,13 +43,13 @@ This file lists the available hardware modules and how they fit into the safety-
 
 ### Useful Next Extensions
 
-- microphone for loud sound or TinyML sound classification
-- vibration sensor for shock/knock detection
+- microphone for loud sound or TinyML sound classification, now wired on ESP #3
+- vibration sensor for shock/knock detection, now wired on ESP #3
+- touch sensor for acknowledge/silence/arm/disarm input, now wired on ESP #3
 - DS18B20 temperature as context data
 
 ### Ignore For Now
 
-- touch sensor
 - tilt sensor
 - RGB/color sensor
 
@@ -61,7 +61,7 @@ These modules can be mentioned as available hardware, but they should not distra
 | --- | --- | --- |
 | ESP #1 | Monitoring node | PIR, reed switch, DS18B20 temperature |
 | ESP #2 | Alarm node | Relay actuator and PWM-controlled buzzer |
-| ESP #3 | Advanced sensor node | Planned microphone and/or vibration sensor |
+| ESP #3 | Safety context node | Vibration sensor, microphone, and touch sensor |
 | ESP #4 | Optional node | Currently broken / not required |
 
 ## Mid-Term Hardware Priority
