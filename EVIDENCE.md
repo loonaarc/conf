@@ -67,7 +67,7 @@ Captured: yes
 
 ## 5. MQTT Explorer: Temperature Sensor
 
-Paste image here.
+![MQTT Explorer temperature sensor telemetry](docs/evidence/05-mqtt-explorer-temperature-sensor.png)
 
 Figure 5 shows MQTT Explorer receiving DS18B20 temperature telemetry under:
 
@@ -80,7 +80,7 @@ This proves that the monitoring node also publishes periodic sensor telemetry.
 Status:
 
 ```text
-Captured: no
+Captured: yes
 ```
 
 ## 6. openHAB Basic UI: Current Safety-Monitoring View

@@ -1,130 +1,218 @@
 # Architecture
 
-This document explains how the configuration is structured and how data moves through the system. For installation, startup commands, and troubleshooting, see [README.md](README.md).
+This document describes the current architecture of the distributed edge-based safety monitoring project. For setup and startup commands, see [README.md](README.md). For wiring details, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
 
-The lab material builds the system in three stages:
+## Current Goal
 
-1. Lab 1 prepares the D1 Mini with Tasmota, relay hardware, MQTT, and an MQTT client.
-2. Lab 3 preparations install openHAB and recommend Visual Studio Code with the openHAB extension.
-3. Lab 3 integrates the MQTT device into openHAB using text-based configuration files.
-
-## Components
-
-openHAB does not talk to the Tasmota device directly. The device and openHAB exchange messages through a local Mosquitto MQTT broker.
+The current milestone proves this chain:
 
 ```text
-+-------------------+       MQTT        +-------------------+
-| Tasmota D1 Mini   | <---------------> | Mosquitto broker  |
-| Relay / switch    |                   | localhost:1883    |
-+-------------------+                   +-------------------+
-                                                ^
-                                                |
-                                                | MQTT binding
-                                                v
-                                      +-------------------+
-                                      | openHAB           |
-                                      | Things / Items    |
-                                      | Rules / Basic UI  |
-                                      +-------------------+
+ESP #1 sensors
+  -> Tasmota
+  -> Mosquitto MQTT broker
+  -> openHAB MQTT binding
+  -> openHAB Items / Basic UI / rule
+  -> relay test actuator
 ```
 
-## openHAB Configuration Flow
+The next larger milestone is:
+
+```text
+ESP #1 sensor event
+  -> MQTT
+  -> openHAB rule
+  -> MQTT command
+  -> ESP #2 alarm actuator
+```
+
+That later step proves that one D1 Mini device can trigger a second D1 Mini device.
+
+## System Components
+
+```text
++-----------------------------+
+| ESP #1 Safety Monitor Node  |
+| Tasmota topic:              |
+| safety_monitor_1            |
+|                             |
+| D2 -> PIR / Switch1         |
+| D6 -> Reed / Switch2        |
+| D4 -> DS18B20 temperature   |
+| D1 -> relay test actuator   |
++--------------+--------------+
+               |
+               | MQTT
+               v
++--------------+--------------+
+| Mosquitto MQTT broker       |
+| host: localhost for openHAB |
+| port: 1883                  |
++--------------+--------------+
+               ^
+               |
+               | MQTT binding
+               v
++--------------+--------------+
+| openHAB                     |
+| Things / Items / Rules      |
+| Basic UI sitemap            |
++--------------+--------------+
+               |
+               | user view/control
+               v
++--------------+--------------+
+| Browser / Basic UI          |
+| sitemap=safety_monitor      |
++-----------------------------+
+```
+
+MQTT Explorer is used beside openHAB as a debugging and evidence tool. It connects to the same broker and shows the raw Tasmota topics before openHAB transforms them into Items.
+
+## File-Based Configuration
+
+The project uses openHAB text configuration files:
 
 ```text
 things/mqtt.things
-  defines MQTT broker and MQTT device channels
+  defines MQTT broker and MQTT channels
         |
         v
 items/safety_monitor.items
-  links channels to openHAB items
+  links channels to openHAB Items
         |
         +--> sitemaps/safety_monitor.sitemap
-        |      displays items in Basic UI
+        |      displays Items in Basic UI
         |
         +--> rules/safety_monitor.rules
-               reacts to item state changes
+               reacts to Item state changes
 ```
 
-This follows the Lab 3 requirement that the openHAB configuration is done with files, not through MainUI-managed objects.
+This keeps the configuration inspectable and suitable for documentation/screenshots.
 
-## MQTT Thing Layer
+## MQTT Topics
 
-`things/mqtt.things` defines two levels:
-
-- `Bridge mqtt:broker:mosquitto` is the connection from openHAB to Mosquitto.
-- `Thing mqtt:topic:d1mini` is the logical MQTT device using that broker.
-
-The D1 Mini thing exposes two channels:
-
-- `relay` sends commands to `cmnd/safety_monitor_1/POWER` and reads state from `stat/safety_monitor_1/POWER`.
-- `motion` reads JSON messages from `stat/safety_monitor_1/RESULT` and extracts `$.Switch1.Action`.
-
-If the Tasmota device topic changes, the `safety_monitor_1` part must be changed in this file.
-
-Tasmota also publishes general telemetry under:
+Tasmota uses the topic name:
 
 ```text
-tele/safety_monitor_1/
+safety_monitor_1
 ```
 
-Examples from Lab 1:
+Important topics:
 
 ```text
 tele/safety_monitor_1/LWT
 tele/safety_monitor_1/SENSOR
+stat/safety_monitor_1/RESULT
+stat/safety_monitor_1/POWER
+cmnd/safety_monitor_1/POWER
 ```
 
-Topics below `$SYS` are broker status topics from Mosquitto itself. They are useful for checking the broker, but they are not sensor or actuator data from the D1 Mini.
+Meaning:
 
-In the Lab 3 handout, the same pattern is also used for a DS18B20 temperature sensor by adding another MQTT channel and extracting the temperature from the Tasmota JSON payload with JSONPATH. This local configuration currently uses a motion-style JSON field instead:
+| Topic | Direction | Purpose |
+| --- | --- | --- |
+| `tele/safety_monitor_1/LWT` | Tasmota -> MQTT | Online/offline status |
+| `tele/safety_monitor_1/SENSOR` | Tasmota -> MQTT | Periodic sensor telemetry, including DS18B20 temperature |
+| `stat/safety_monitor_1/RESULT` | Tasmota -> MQTT | Immediate switch events from PIR/reed |
+| `stat/safety_monitor_1/POWER` | Tasmota -> MQTT | Relay state |
+| `cmnd/safety_monitor_1/POWER` | openHAB/MQTT -> Tasmota | Relay command |
+
+## Thing Layer
+
+[things/mqtt.things](things/mqtt.things) contains:
 
 ```text
-$.Switch1.Action
+Bridge mqtt:broker:mosquitto
+Thing mqtt:topic:d1mini
+```
+
+The bridge connects openHAB to Mosquitto on:
+
+```text
+localhost:1883
+```
+
+The `d1mini` Thing represents ESP #1 and exposes these channels:
+
+| Channel | MQTT topic | Transformation | Meaning |
+| --- | --- | --- | --- |
+| `relay` | `stat/safety_monitor_1/POWER` and `cmnd/safety_monitor_1/POWER` | none | Reads and commands the relay |
+| `motion` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch1.Action` | PIR motion from Switch1 |
+| `door` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch2.Action` | Reed switch from Switch2 |
+| `temperature` | `tele/safety_monitor_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
+
+The reed switch originally produced `TOGGLE` actions. The Tasmota command below was needed so openHAB receives clean `ON` and `OFF` states:
+
+```text
+SwitchMode2 1
 ```
 
 ## Item Layer
 
-`items/safety_monitor.items` creates openHAB items:
+[items/safety_monitor.items](items/safety_monitor.items) defines the openHAB Items:
+
+| Item | Type | Source |
+| --- | --- | --- |
+| `Relay` | `Switch` | MQTT relay channel |
+| `Motion` | `Switch` | PIR / Switch1 channel |
+| `Door` | `Switch` | Reed / Switch2 channel |
+| `Temperature` | `Number` | DS18B20 temperature channel |
+| `MotionAutomation` | `Switch` | Local openHAB control, not MQTT-linked |
+
+Items are the values that the UI displays and the rules use.
+
+## UI Layer
+
+[sitemaps/safety_monitor.sitemap](sitemaps/safety_monitor.sitemap) defines the Basic UI page:
 
 ```text
-Relay             -> mqtt:topic:d1mini:relay
-Motion            -> mqtt:topic:d1mini:motion
-MotionAutomation  -> local switch, not linked to MQTT
+http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
-`Relay` and `Motion` are connected to MQTT channels. `MotionAutomation` is only used inside openHAB as an enable/disable switch for the rule.
+The current UI shows:
 
-In the original temperature example from the handout, this layer would also include a number item for the measured temperature and another item for the threshold value.
+- relay switch
+- PIR motion state
+- reed/door state
+- DS18B20 temperature
+- motion automation enable switch
 
 ## Rule Layer
 
-`rules/safety_monitor.rules` contains one rule:
+[rules/safety_monitor.rules](rules/safety_monitor.rules) currently contains one rule:
 
 ```text
 Motion changed to ON
 ```
 
-When this happens, openHAB checks whether `MotionAutomation` is ON. If it is, the relay is toggled:
+If `MotionAutomation` is ON, the rule toggles the relay:
 
-- Relay ON becomes OFF.
-- Relay OFF becomes ON.
+```text
+Motion ON -> openHAB rule -> Relay command
+```
 
-The Lab 3 handout describes an automation rule based on the DS18B20 temperature crossing a threshold. This configuration keeps the same openHAB rule concept but applies it to motion: motion is the trigger, and `MotionAutomation` is the local enable switch.
+This is still a local test actuator on ESP #1. The final distributed version should move the alarm actuator to ESP #2.
 
-## UI Layer
+## Helper Script
 
-`sitemaps/safety_monitor.sitemap` defines the Basic UI page named `safety_monitor`.
+[scripts/start_safety_monitor.ps1](scripts/start_safety_monitor.ps1) opens the local demo tools:
 
-It has two frames:
+- Tasmota web UI
+- Mosquitto
+- MQTT Explorer
+- openHAB
+- Basic UI sitemap
 
-- `Device` shows the relay switch and motion state.
-- `Control` shows the automation enable switch.
+Run from the openHAB root:
 
-The handout's Basic UI example starts with a relay switch, then adds sensor and automation controls. This sitemap follows that structure with the currently implemented relay, motion state, and motion automation switch.
+```powershell
+cd C:\Users\lil\openhab-5.1.4
+.\conf\scripts\start_safety_monitor.ps1
+```
 
-## Add-on Layer
+## Add-ons
 
-`services/addons.cfg` installs the add-ons required by the file-based setup:
+[services/addons.cfg](services/addons.cfg) installs the required openHAB add-ons:
 
 ```text
 binding = mqtt
@@ -132,4 +220,12 @@ transformation = jsonpath
 ui = basic
 ```
 
-The MQTT binding connects openHAB to Mosquitto, JSONPATH extracts values from JSON MQTT payloads, and Basic UI renders the sitemap.
+The MQTT binding connects openHAB to Mosquitto. JSONPATH extracts values from Tasmota JSON payloads. Basic UI renders the sitemap.
+
+## Lab Origin
+
+This project continues from the IoT Applications Lab 1 and Lab 3 setup. The current configuration keeps the useful lab chain but renames and extends it toward the safety-monitoring project:
+
+```text
+D1 Mini / Tasmota -> Mosquitto -> openHAB -> rule/UI -> actuator
+```

@@ -177,7 +177,7 @@ Use a pull-up input mode in Tasmota if available, for example:
 GPIO12 (D6) -> Switch2
 ```
 
-The reed module has been verified with a magnet. If Tasmota reports `Switch2` as `TOGGLE`, that still proves the input is working. For a cleaner openHAB door item later, configure Switch2 to report explicit `ON` and `OFF` states:
+The reed module has been verified with a magnet. At first, Tasmota reported `Switch2` as `TOGGLE`, which proved that the input was working but was not clean enough for the openHAB `Door/Reed` switch item. The following Tasmota console command was necessary so the reed switch reports explicit `ON` and `OFF` states:
 
 ```text
 SwitchMode2 1

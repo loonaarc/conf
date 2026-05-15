@@ -221,7 +221,7 @@ GPIO4  (D2) -> Switch1
 GPIO12 (D6) -> Switch2
 ```
 
-The reed module has been verified with a magnet. If Tasmota reports `Switch2` as `TOGGLE`, the input is working. For a cleaner openHAB door item later, use follow mode:
+The reed module has been verified with a magnet. At first, Tasmota reported `Switch2` as `TOGGLE`, which proved that the input was working but was not clean enough for the openHAB `Door/Reed` switch item. The following Tasmota console command was necessary so the reed switch reports explicit `ON` and `OFF` states:
 
 ```text
 SwitchMode2 1
@@ -267,7 +267,26 @@ Tasmota version:  15.3.0
 
 Start Mosquitto before openHAB so the MQTT bridge can connect.
 
-In this lab setup, Mosquitto could be started simply by opening the Mosquitto installation folder and double-clicking:
+## Start The Demo Tools With One Script
+
+For convenience, the project includes a helper script:
+
+```powershell
+cd C:\Users\lil\openhab-5.1.4
+.\conf\scripts\start_safety_monitor.ps1
+```
+
+The script opens:
+
+- Tasmota web UI for ESP #1
+- Mosquitto
+- MQTT Explorer
+- openHAB
+- openHAB Basic UI at `http://localhost:8080/basicui/app?sitemap=safety_monitor`
+
+Keep the Mosquitto and openHAB windows open while testing. MQTT Explorer may still need the saved broker connection selected manually.
+
+In this lab setup, Mosquitto could be started simply by opening the Mosquitto installation folder "C:\Program Files\Mosquitto\mosquitto.exe" and double-clicking:
 
 ```text
 mosquitto.exe

@@ -1,13 +1,34 @@
+/*
+File purpose:
+This file defines the Basic UI page for the safety-monitoring project.
+
+The sitemap decides which Items are visible in the browser UI.
+It does not define MQTT topics or automation logic.
+*/
+
+// Sitemap ID used in the Basic UI URL: ?sitemap=safety_monitor
 sitemap safety_monitor label="Safety Monitor"
 {
+    // Device frame shows live sensor values and the test relay.
     Frame label="Device"
     {
+        // Manual relay control; this should click the relay shield.
         Switch item=Relay label="Relay"
+
+        // PIR state from Switch1.
         Text item=Motion label="Motion [%s]" icon="motion"
+
+        // Reed switch / door state from Switch2.
+        Text item=Door label="Door/Reed [%s]" icon="door"
+
+        // DS18B20 temperature from Tasmota SENSOR telemetry.
+        Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
     }
 
+    // Control frame contains local openHAB controls.
     Frame label="Control"
     {
+        // Enables or disables the rule that toggles the relay on motion.
         Switch item=MotionAutomation label="Motion automation"
     }
 }

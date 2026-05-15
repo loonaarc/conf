@@ -1,10 +1,23 @@
+/*
+File purpose:
+This file contains openHAB automation rules for the safety-monitoring project.
+
+Current rule:
+When PIR motion is detected, openHAB toggles the relay if automation is enabled.
+*/
+
+// Rule name shown in logs.
 rule "Motion toggles relay"
 when
+    // Trigger: run this rule when the Motion item changes to ON.
     Item Motion changed to ON
 then
+    // Only run the relay action if the local automation switch is enabled.
     if (MotionAutomation.state == ON) {
+        // If the relay is currently ON, switch it OFF.
         if (Relay.state == ON) {
             Relay.sendCommand(OFF)
+        // Otherwise, switch it ON.
         } else {
             Relay.sendCommand(ON)
         }

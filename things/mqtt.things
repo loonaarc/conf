@@ -1,24 +1,60 @@
 /*
-Bridge -> connection to broker
-mqtt:broker -> MQTT binding
-mosquitto -> your broker name (you can choose it)
-host="localhost" -> your PC (Mosquitto runs locally)
-port=1883 -> default MQTT port
+File purpose:
+This file defines the MQTT connection and the MQTT channels used by openHAB.
+
+Data flow:
+Tasmota on ESP #1 publishes MQTT messages to Mosquitto.
+openHAB reads those MQTT messages through the channels below.
+openHAB can also publish MQTT commands back to Tasmota for the relay.
 */
+
+// Bridge = connection from openHAB to the local Mosquitto MQTT broker.
 Bridge mqtt:broker:mosquitto "MQTT Broker" [
+    // Mosquitto runs on the same machine as openHAB.
     host="localhost",
+    // Standard MQTT port.
     port=1883,
+    // Plain local MQTT connection, no TLS.
     secure=false
 ]
 
-Thing mqtt:topic:d1mini "D1 Mini Relay" (mqtt:broker:mosquitto) {
+// Thing = logical MQTT device in openHAB.
+// This represents ESP #1, the Tasmota monitoring node with topic safety_monitor_1.
+Thing mqtt:topic:d1mini "Safety Monitor Node" (mqtt:broker:mosquitto) {
     Channels:
+        // Relay channel.
+        // Reads relay state from Tasmota and sends relay commands back to Tasmota.
         Type switch : relay "Relay" [
+            // Tasmota publishes relay state here, for example ON or OFF.
             stateTopic="stat/safety_monitor_1/POWER",
+            // openHAB publishes commands here when the Relay item is switched.
             commandTopic="cmnd/safety_monitor_1/POWER"
         ]
+
+        // PIR motion channel.
+        // Tasmota publishes Switch1 events to the RESULT topic.
         Type switch : motion "Motion" [
+            // Shared Tasmota result topic for switch events.
             stateTopic="stat/safety_monitor_1/RESULT",
+            // Extracts Switch1.Action from JSON, for example ON or OFF.
             transformationPattern="JSONPATH:$.Switch1.Action"
+        ]
+
+        // Reed switch / door channel.
+        // Tasmota publishes Switch2 events to the same RESULT topic.
+        Type switch : door "Door/Reed" [
+            // Shared Tasmota result topic for switch events.
+            stateTopic="stat/safety_monitor_1/RESULT",
+            // Extracts Switch2.Action from JSON, for example ON or OFF.
+            transformationPattern="JSONPATH:$.Switch2.Action"
+        ]
+
+        // DS18B20 temperature channel.
+        // Tasmota publishes sensor telemetry periodically to the SENSOR topic.
+        Type number : temperature "Temperature" [
+            // Tasmota telemetry topic containing DS18B20 JSON data.
+            stateTopic="tele/safety_monitor_1/SENSOR",
+            // Extracts the numeric temperature value from the DS18B20 object.
+            transformationPattern="JSONPATH:$.DS18B20.Temperature"
         ]
 }

@@ -1,3 +1,27 @@
+/*
+File purpose:
+This file creates openHAB Items for the safety-monitoring project.
+
+Items are the named values used by the UI and rules.
+The channel links connect each Item to one MQTT channel from things/mqtt.things.
+*/
+
+// Relay actuator on ESP #1.
+// Linked to the MQTT relay channel, so openHAB can read and command the relay.
 Switch Relay "Relay" { channel="mqtt:topic:d1mini:relay" }
+
+// PIR motion state from Switch1 on ESP #1.
+// This is updated from stat/safety_monitor_1/RESULT via the motion channel.
 Switch Motion "Motion" { channel="mqtt:topic:d1mini:motion" }
+
+// Reed switch / door state from Switch2 on ESP #1.
+// SwitchMode2 1 was needed in Tasmota so this reports ON/OFF cleanly.
+Switch Door "Door/Reed" { channel="mqtt:topic:d1mini:door" }
+
+// DS18B20 temperature value from ESP #1 telemetry.
+// Display format shows one decimal place and C for Celsius.
+Number Temperature "Temperature [%.1f C]" { channel="mqtt:topic:d1mini:temperature" }
+
+// Local openHAB-only switch.
+// Not linked to MQTT; it enables or disables the motion automation rule.
 Switch MotionAutomation "Motion automation"
