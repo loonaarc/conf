@@ -230,6 +230,14 @@ The alarm node relay uses:
 ```text
 ESP #2 topic: safety_alarm_1
 GPIO5 (D1) -> Relay1
+GPIO14 (D5) -> PWM1, buzzer
+```
+
+The buzzer did not behave like a simple active buzzer. It only clicked when configured as a relay-style output, but worked after setting `GPIO14 (D5) -> PWM1`. Useful Tasmota console commands:
+
+```text
+Dimmer 50
+POWER2 OFF
 ```
 
 The reed module has been verified with a magnet. At first, Tasmota reported `Switch2` as `TOGGLE`, which proved that the input was working but was not clean enough for the openHAB `Door/Reed` switch item. The following Tasmota console command was necessary so the reed switch reports explicit `ON` and `OFF` states:
@@ -397,6 +405,8 @@ You can also use MQTT Explorer or the Mosquitto command-line clients to inspect 
 ```text
 Relay state:    stat/safety_alarm_1/POWER
 Relay command:  cmnd/safety_alarm_1/POWER
+Buzzer command: cmnd/safety_alarm_1/Dimmer
+Buzzer off:     cmnd/safety_alarm_1/POWER2
 Motion state:   stat/safety_monitor_1/RESULT
 ```
 
@@ -430,6 +440,8 @@ Connection status topic: tele/safety_monitor_1/LWT
 Temperature data topic:  tele/safety_monitor_1/SENSOR
 Command topic prefix:    cmnd/safety_monitor_1/
 Relay command topic:     cmnd/safety_alarm_1/POWER
+Buzzer dimmer topic:     cmnd/safety_alarm_1/Dimmer
+Buzzer off topic:        cmnd/safety_alarm_1/POWER2
 ```
 
 Everything below `tele/safety_monitor_1/` comes from the ESP8266/Tasmota device. Everything below `$SYS` is Mosquitto broker status information, not device data.

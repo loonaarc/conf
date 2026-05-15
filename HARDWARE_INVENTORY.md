@@ -13,7 +13,7 @@ This file lists the available hardware modules and how they fit into the safety-
 | 5 | HC-SR501 PIR motion sensor | White dome/bubble Fresnel lens | Detects motion using infrared | Must-have, already used |
 | 6 | 1-channel relay module `SRD-05VDC-SL-C` | Blue relay cube, screw terminals | Switches external loads; useful as actuator | Must-have actuator option |
 | 7-10 | ESP8266 D1 Mini boards | Small blue boards, metal Wi-Fi module, Micro-USB | Wi-Fi microcontrollers for Tasmota/MQTT/edge logic | Core hardware |
-| 11 | Active buzzer module | Black round buzzer, often marked `+`, usually 3 pins | Makes sound directly, no PWM required | Must-have actuator option |
+| 11 | Buzzer module | Black round buzzer, often marked `+`, usually 3 pins | Alarm sound output; in this setup it works as PWM-controlled output | Must-have actuator option |
 | 12 | DS18B20 temperature sensor, TO-92 | Small black transistor-like part, 3 legs | Digital temperature sensor using 1-Wire | Nice context sensor, already used |
 | 13 | HW-478 RGB / color light sensor | Black board, label like `3 Color`, small white sensor area | Detects light/color levels | Ignore for now |
 | 14 | SW-420 vibration sensor module | Blue board, blue potentiometer, cylindrical vibration sensor | Detects shock/knock/vibration | Nice extension |
@@ -29,7 +29,7 @@ This file lists the available hardware modules and how they fit into the safety-
 | Environment | DS18B20 temperature |
 | Disturbance | SW-420 vibration, SW-520D tilt |
 | Light/color | HW-478 RGB/color sensor |
-| Output | Active buzzer, relay |
+| Output | Buzzer, relay |
 | Manual input | TTP223 touch sensor |
 
 ## Project-Relevant Selection
@@ -39,7 +39,7 @@ This file lists the available hardware modules and how they fit into the safety-
 - ESP8266 D1 Mini
 - PIR motion sensor
 - reed switch / magnetic sensor
-- relay or active buzzer as alarm actuator
+- relay or buzzer as alarm actuator
 
 ### Useful Next Extensions
 
@@ -60,7 +60,7 @@ These modules can be mentioned as available hardware, but they should not distra
 | Node | Role | Hardware |
 | --- | --- | --- |
 | ESP #1 | Monitoring node | PIR, reed switch, DS18B20 temperature |
-| ESP #2 | Alarm node | Relay actuator now moved here; active buzzer optional next |
+| ESP #2 | Alarm node | Relay actuator and PWM-controlled buzzer |
 | ESP #3 | Advanced sensor node | Planned microphone and/or vibration sensor |
 | ESP #4 | Optional node | Currently broken / not required |
 

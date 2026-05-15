@@ -209,13 +209,14 @@ Recommended first version:
 | Component | D1 Mini pin |
 | --- | --- |
 | Relay module signal | `D1` / GPIO5 |
-| Active buzzer signal | `D5` / GPIO14 or `D6` / GPIO12 |
+| Buzzer signal | `D5` / GPIO14 |
 | GND | `GND` |
 
 Current ESP #2 Tasmota setting:
 
 ```text
 GPIO5 (D1) -> Relay1
+GPIO14 (D5) -> PWM1
 Topic -> safety_alarm_1
 ```
 
@@ -236,13 +237,35 @@ relay GND/-        -> D1 Mini GND / shared ground rail
 
 A mechanical relay clicks only when its coil is powered and switched. If only the signal wire is connected, Tasmota can publish `POWER ON/OFF` but the relay hardware will not move.
 
-For a simple active buzzer module, Tasmota can often control it like a relay output:
+The buzzer first only made a quiet click when configured as a relay-style output. It worked after changing the Tasmota module setting to PWM:
 
 ```text
-GPIO14 (D5) -> Relay2
+GPIO14 (D5) -> PWM1
 ```
 
-Then openHAB can send commands through MQTT just like it does for a relay.
+Working Tasmota console commands:
+
+```text
+Dimmer 50
+POWER2 OFF
+```
+
+Tasmota reported:
+
+```text
+stat/safety_alarm_1/RESULT = {"POWER2":"ON","Dimmer":50}
+stat/safety_alarm_1/RESULT = {"POWER2":"OFF"}
+stat/safety_alarm_1/POWER2 = OFF
+```
+
+For openHAB, the useful MQTT command topics are:
+
+```text
+cmnd/safety_alarm_1/Dimmer
+cmnd/safety_alarm_1/POWER2
+```
+
+Use `Dimmer 50` or MQTT payload `50` on `cmnd/safety_alarm_1/Dimmer` to sound the buzzer, and `OFF` on `cmnd/safety_alarm_1/POWER2` to stop it.
 
 ## First Wiring Target
 
@@ -276,6 +299,7 @@ DS18B20 temperature: yes, publishes tele/safety_monitor_1/SENSOR
 Switch2 in telemetry: yes
 Reed change event: yes, publishes Switch2 when triggered by magnet
 ESP #2 relay on safety_alarm_1: yes, clicks when toggled in Tasmota
+ESP #2 buzzer on safety_alarm_1: yes, works with PWM1 and Dimmer 50
 ```
 
 Important MQTT Explorer note:

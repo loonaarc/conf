@@ -114,6 +114,8 @@ Meaning:
 | `stat/safety_monitor_1/RESULT` | Tasmota -> MQTT | Immediate switch events from PIR/reed |
 | `stat/safety_alarm_1/POWER` | Tasmota -> MQTT | ESP #2 relay state |
 | `cmnd/safety_alarm_1/POWER` | openHAB/MQTT -> Tasmota | ESP #2 relay command |
+| `cmnd/safety_alarm_1/Dimmer` | openHAB/MQTT -> Tasmota | ESP #2 PWM buzzer intensity |
+| `cmnd/safety_alarm_1/POWER2` | openHAB/MQTT -> Tasmota | ESP #2 buzzer off/on state |
 
 ## Thing Layer
 
@@ -130,11 +132,12 @@ The bridge connects openHAB to Mosquitto on:
 localhost:1883
 ```
 
-The `d1mini` Thing currently represents ESP #1 and exposes the sensor channels. The relay has physically moved to ESP #2, so the next openHAB integration step is to move relay control from `safety_monitor_1` to `safety_alarm_1`.
+The `d1mini` Thing currently represents ESP #1 and exposes the sensor channels. The relay and buzzer have physically moved to ESP #2, so the next openHAB integration step is to add alarm-node channels for `safety_alarm_1`.
 
 | Channel | MQTT topic | Transformation | Meaning |
 | --- | --- | --- | --- |
 | `relay` | currently still configured for `safety_monitor_1`; should move to `safety_alarm_1` next | none | Reads and commands the alarm relay |
+| alarm buzzer, next | `cmnd/safety_alarm_1/Dimmer` and `cmnd/safety_alarm_1/POWER2` | none | Sounds/stops the PWM buzzer |
 | `motion` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch1.Action` | PIR motion from Switch1 |
 | `door` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch2.Action` | Reed switch from Switch2 |
 | `temperature` | `tele/safety_monitor_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
@@ -189,7 +192,7 @@ If `MotionAutomation` is ON, the current rule toggles the relay item:
 Motion ON -> openHAB rule -> Relay command
 ```
 
-The relay hardware has moved to ESP #2. The next config step is to point the relay MQTT channel and rule behavior at `safety_alarm_1`, then remove the old relay setting from ESP #1.
+The relay and buzzer hardware have moved to ESP #2. The next config step is to add `safety_alarm_1` actuator channels, then remove the old relay setting from ESP #1.
 
 ## Helper Script
 

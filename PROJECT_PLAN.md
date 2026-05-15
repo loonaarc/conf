@@ -39,7 +39,7 @@ Available modules and hardware priorities are documented in [HARDWARE_INVENTORY.
 | ESP | Role | Components | Purpose |
 | --- | --- | --- | --- |
 | ESP #1 | Monitoring node | PIR, reed switch | Detect motion and door/window opening |
-| ESP #2 | Alarm node | Active buzzer, relay, optional LED | React to alerts from openHAB |
+| ESP #2 | Alarm node | Relay, PWM-controlled buzzer | React to alerts from openHAB |
 | ESP #3 | Advanced sensor node | Vibration sensor, microphone | Detect shock and loud/distress-like sound |
 | ESP #4 | Optional context/status node | Built-in LED first, optional extra sensor later | Optional extension if the fourth board works |
 
@@ -71,7 +71,7 @@ Keep a small inventory table while identifying the boards:
 | Role | Topic | IP address | MAC address | Notes |
 | --- | --- | --- | --- | --- |
 | Monitoring node | `safety_monitor_1` | `192.168.43.223` | `A8:48:FA:C1:7D:DD` | ESP #1, label `1`, PIR + reed |
-| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay now moved here |
+| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay + PWM buzzer |
 | Advanced node | `safety_advanced_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone |
 | Optional context/status node | `safety_context_1` | not working yet | TBD | optional extension |
 
@@ -124,7 +124,7 @@ This D1 Mini will be used as the actuator/alarm node.
 | MQTT topic | `safety_alarm_1` |
 | MQTT full topic | `cmnd/safety_alarm_1/` |
 | HTTP API | Enabled |
-| Planned actuators | relay now working, active buzzer optional next |
+| Planned actuators | relay working, buzzer working with `PWM1` / `Dimmer 50` |
 
 ### ESP #3: Safety Advanced 1
 
@@ -168,6 +168,8 @@ Examples:
 tele/safety_monitor_1/LWT
 stat/safety_monitor_1/RESULT
 cmnd/safety_alarm_1/POWER
+cmnd/safety_alarm_1/POWER2
+cmnd/safety_alarm_1/Dimmer
 ```
 
 Meaning:
@@ -261,15 +263,15 @@ The Lab 4 mid-term check is a status check, not the final project. The project s
 
 | Mid-term requirement | Current project answer |
 | --- | --- |
-| 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay is working in Tasmota |
-| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay actuator |
+| 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay/buzzer work in Tasmota |
+| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay and buzzer actuators |
 | Network setup | D1 nodes -> Mosquitto -> openHAB -> browser/MQTT Explorer |
 | Mosquitto broker | Installed and used locally |
 | Devices 1 and 2 MQTT access | ESP #1 proven; ESP #2 should be shown in MQTT Explorer with `safety_alarm_1` |
 | openHAB installed | Done |
 | Basic UI sitemap | `safety_monitor` sitemap exists |
-| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay should be added next |
-| Manual actuator action in UI | Next target: manually control ESP #2 relay from openHAB |
+| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay/buzzer should be added next |
+| Manual actuator action in UI | Next target: manually control ESP #2 relay/buzzer from openHAB |
 | External webservice via HTTP binding | Missing, add after ESP #2 manual control |
 | Basic openHAB rules | Started; next useful rule should trigger ESP #2 |
 

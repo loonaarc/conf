@@ -8,16 +8,16 @@ Maximum score: 20 points.
 
 | Requirement | Current project status | Next action |
 | --- | --- | --- |
-| Configure 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay works in Tasmota | Add ESP #2 to openHAB |
-| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay actuator | Show both devices during demo |
+| Configure 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay/buzzer work in Tasmota | Add ESP #2 to openHAB |
+| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay and buzzer actuators | Show both devices during demo |
 | Network setup shown | Partly documented | Add a simple network plan diagram |
 | Mosquitto broker installed | Done | Show Mosquitto running during demo |
 | Device 1 MQTT access | Done: `safety_monitor_1` | Show in MQTT Explorer |
-| Device 2 MQTT access | Relay works in Tasmota; MQTT proof should be captured | Show `safety_alarm_1` in MQTT Explorer |
+| Device 2 MQTT access | Relay and buzzer work in Tasmota; MQTT proof should be captured | Show `safety_alarm_1` in MQTT Explorer |
 | openHAB installed | Done | Start openHAB and show Basic UI |
 | Basic UI sitemap configured | Done: `safety_monitor` | Show Safety Monitor sitemap |
-| Display at least one device value/status in openHAB UI | Done for ESP #1: motion, door, temperature | Add ESP #2 relay state/switch |
-| Manual action on device actuator via openHAB UI | Next target: ESP #2 relay | Add manual ESP #2 relay switch |
+| Display at least one device value/status in openHAB UI | Done for ESP #1: motion, door, temperature | Add ESP #2 relay/buzzer controls |
+| Manual action on device actuator via openHAB UI | Next target: ESP #2 relay and buzzer | Add manual ESP #2 actuator switches |
 | External webservice via HTTP binding | Missing | Add one HTTP value to UI |
 | Basic rules in openHAB | Started | Keep simple rule; later use ESP #1 event to trigger ESP #2 |
 
@@ -32,7 +32,7 @@ ESP #1 monitoring node
   -> openHAB UI
 
 ESP #2 alarm node
-  relay or buzzer
+  relay and PWM-controlled buzzer
   <- MQTT command
   <- openHAB manual UI switch
 ```
@@ -53,7 +53,7 @@ For mid-term, this is cleaner than keeping the main actuator on ESP #1. ESP #1 c
 
 ```text
 ESP #1 = PIR + reed + temperature
-ESP #2 = relay actuator
+ESP #2 = relay + buzzer actuators
 ```
 
 Next cleanup step: after openHAB controls ESP #2 successfully, remove the old relay GPIO setting from ESP #1 Tasmota so ESP #1 is sensor-only.
@@ -75,7 +75,7 @@ Capture or show:
 ## Next Practical Steps
 
 1. Prove ESP #2 MQTT access in MQTT Explorer.
-2. Add ESP #2 manual actuator control to openHAB.
+2. Add ESP #2 manual relay and buzzer control to openHAB.
 3. Remove the old ESP #1 relay config after ESP #2 control works.
 4. Update Basic UI with the ESP #2 actuator state/switch.
 5. Add a simple HTTP-binding value.
