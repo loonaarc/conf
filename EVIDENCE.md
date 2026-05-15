@@ -85,7 +85,7 @@ Captured: yes
 
 ## 6. openHAB Basic UI: Current Safety-Monitoring View
 
-Paste image here.
+![alt text](image.png)
 
 Figure 6 shows the current openHAB Basic UI with the relay and motion items for the safety-monitoring project.
 

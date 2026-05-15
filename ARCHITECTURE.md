@@ -12,7 +12,6 @@ ESP #1 sensors
   -> Mosquitto MQTT broker
   -> openHAB MQTT binding
   -> openHAB Items / Basic UI / rule
-  -> relay test actuator
 ```
 
 The next larger milestone is:
@@ -38,7 +37,6 @@ That later step proves that one D1 Mini device can trigger a second D1 Mini devi
 | D2 -> PIR / Switch1         |
 | D6 -> Reed / Switch2        |
 | D4 -> DS18B20 temperature   |
-| D1 -> relay test actuator   |
 +--------------+--------------+
                |
                | MQTT
@@ -114,8 +112,8 @@ Meaning:
 | `tele/safety_monitor_1/LWT` | Tasmota -> MQTT | Online/offline status |
 | `tele/safety_monitor_1/SENSOR` | Tasmota -> MQTT | Periodic sensor telemetry, including DS18B20 temperature |
 | `stat/safety_monitor_1/RESULT` | Tasmota -> MQTT | Immediate switch events from PIR/reed |
-| `stat/safety_monitor_1/POWER` | Tasmota -> MQTT | Relay state |
-| `cmnd/safety_monitor_1/POWER` | openHAB/MQTT -> Tasmota | Relay command |
+| `stat/safety_alarm_1/POWER` | Tasmota -> MQTT | ESP #2 relay state |
+| `cmnd/safety_alarm_1/POWER` | openHAB/MQTT -> Tasmota | ESP #2 relay command |
 
 ## Thing Layer
 
@@ -132,11 +130,11 @@ The bridge connects openHAB to Mosquitto on:
 localhost:1883
 ```
 
-The `d1mini` Thing represents ESP #1 and exposes these channels:
+The `d1mini` Thing currently represents ESP #1 and exposes the sensor channels. The relay has physically moved to ESP #2, so the next openHAB integration step is to move relay control from `safety_monitor_1` to `safety_alarm_1`.
 
 | Channel | MQTT topic | Transformation | Meaning |
 | --- | --- | --- | --- |
-| `relay` | `stat/safety_monitor_1/POWER` and `cmnd/safety_monitor_1/POWER` | none | Reads and commands the relay |
+| `relay` | currently still configured for `safety_monitor_1`; should move to `safety_alarm_1` next | none | Reads and commands the alarm relay |
 | `motion` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch1.Action` | PIR motion from Switch1 |
 | `door` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch2.Action` | Reed switch from Switch2 |
 | `temperature` | `tele/safety_monitor_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
@@ -153,7 +151,7 @@ SwitchMode2 1
 
 | Item | Type | Source |
 | --- | --- | --- |
-| `Relay` | `Switch` | MQTT relay channel |
+| `Relay` | `Switch` | MQTT relay channel, next target is ESP #2 |
 | `Motion` | `Switch` | PIR / Switch1 channel |
 | `Door` | `Switch` | Reed / Switch2 channel |
 | `Temperature` | `Number` | DS18B20 temperature channel |
@@ -171,7 +169,7 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
 
 The current UI shows:
 
-- relay switch
+- relay switch, next target is ESP #2
 - PIR motion state
 - reed/door state
 - DS18B20 temperature
@@ -185,13 +183,13 @@ The current UI shows:
 Motion changed to ON
 ```
 
-If `MotionAutomation` is ON, the rule toggles the relay:
+If `MotionAutomation` is ON, the current rule toggles the relay item:
 
 ```text
 Motion ON -> openHAB rule -> Relay command
 ```
 
-This is still a local test actuator on ESP #1. The final distributed version should move the alarm actuator to ESP #2.
+The relay hardware has moved to ESP #2. The next config step is to point the relay MQTT channel and rule behavior at `safety_alarm_1`, then remove the old relay setting from ESP #1.
 
 ## Helper Script
 

@@ -24,12 +24,17 @@ Current order:
 2. Build one clean monitoring node with PIR and reed switch.
 3. Publish stable MQTT events.
 4. Integrate those events into openHAB items.
-5. Implement the first risk-score rule.
-6. Add the alarm node with buzzer and relay.
-7. Add vibration and sound sensors.
-8. Later, use collected data for a TinyML experiment.
+5. Add the alarm node with buzzer and/or relay.
+6. Implement the first cross-device rule.
+7. Implement the first risk-score rule.
+8. Add vibration and sound sensors.
+9. Later, use collected data for a TinyML experiment.
+
+For the mid-term check, prioritize the second D1 Mini before polishing the risk score. The mid-term requirements explicitly ask for two D1 Mini devices with at least one actuator or sensor per device and MQTT access for both devices.
 
 ## Device Roles
+
+Available modules and hardware priorities are documented in [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md).
 
 | ESP | Role | Components | Purpose |
 | --- | --- | --- | --- |
@@ -66,7 +71,7 @@ Keep a small inventory table while identifying the boards:
 | Role | Topic | IP address | MAC address | Notes |
 | --- | --- | --- | --- | --- |
 | Monitoring node | `safety_monitor_1` | `192.168.43.223` | `A8:48:FA:C1:7D:DD` | ESP #1, label `1`, PIR + reed |
-| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, buzzer + relay |
+| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay now moved here |
 | Advanced node | `safety_advanced_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone |
 | Optional context/status node | `safety_context_1` | not working yet | TBD | optional extension |
 
@@ -119,7 +124,7 @@ This D1 Mini will be used as the actuator/alarm node.
 | MQTT topic | `safety_alarm_1` |
 | MQTT full topic | `cmnd/safety_alarm_1/` |
 | HTTP API | Enabled |
-| Planned actuators | relay, active buzzer |
+| Planned actuators | relay now working, active buzzer optional next |
 
 ### ESP #3: Safety Advanced 1
 
@@ -249,6 +254,34 @@ The final IoT Applications check requires more than just a working sensor. The a
 | Persistence and historical values | Add non-default persistence later, for example InfluxDB or JDBC |
 | Customized UI | Rename sitemap/pages around the safety-monitoring use case |
 | Demo video | Record final flow: event -> MQTT -> openHAB -> risk score -> alarm |
+
+## Mid-Term Check Alignment
+
+The Lab 4 mid-term check is a status check, not the final project. The project should show a stable vertical slice and a clear next step.
+
+| Mid-term requirement | Current project answer |
+| --- | --- |
+| 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay is working in Tasmota |
+| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay actuator |
+| Network setup | D1 nodes -> Mosquitto -> openHAB -> browser/MQTT Explorer |
+| Mosquitto broker | Installed and used locally |
+| Devices 1 and 2 MQTT access | ESP #1 proven; ESP #2 should be shown in MQTT Explorer with `safety_alarm_1` |
+| openHAB installed | Done |
+| Basic UI sitemap | `safety_monitor` sitemap exists |
+| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay should be added next |
+| Manual actuator action in UI | Next target: manually control ESP #2 relay from openHAB |
+| External webservice via HTTP binding | Missing, add after ESP #2 manual control |
+| Basic openHAB rules | Started; next useful rule should trigger ESP #2 |
+
+Mid-term target:
+
+```text
+ESP #1 sensor values shown in openHAB
+ESP #2 actuator manually controllable from openHAB
+optional rule: ESP #1 event triggers ESP #2 actuator
+```
+
+ESP #2 now has the relay. Next, move openHAB relay control from `safety_monitor_1` to `safety_alarm_1`. After openHAB can control ESP #2, clean ESP #1 by removing its old relay GPIO setting so ESP #1 becomes sensor-only.
 
 ## TinyML Extension Later
 

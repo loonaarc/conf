@@ -7,10 +7,12 @@ When PIR motion is detected, openHAB toggles the relay if automation is enabled.
 */
 
 // Rule name shown in logs.
-rule "Motion toggles relay"
+rule "Motion and Door Toggles Relay"
 when
     // Trigger: run this rule when the Motion item changes to ON.
-    Item Motion changed to ON
+    Item Motion changed to ON and
+    // Trigger: run this rule when the Door item changes to ON.
+    Item Door changed to ON
 then
     // Only run the relay action if the local automation switch is enabled.
     if (MotionAutomation.state == ON) {

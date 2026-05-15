@@ -16,7 +16,11 @@ For the larger safety-monitoring project plan, see [PROJECT_PLAN.md](PROJECT_PLA
 
 For breadboard, sensor, and pin wiring notes, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
 
+For the available hardware modules and project-relevant selection, see [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md).
+
 For final grading requirements and missing deliverables, see [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md).
+
+For the Lab 4 mid-term project check requirements, see [MIDTERM_CHECKLIST.md](MIDTERM_CHECKLIST.md).
 
 For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENCE.md).
 
@@ -210,15 +214,22 @@ The relay shield uses:
 GPIO5 (D1) -> Relay1
 ```
 
-For the current step-by-step build, this relay can remain on ESP #1 as the existing test actuator. Later, the final alarm relay/buzzer should be placed on ESP #2 so openHAB can demonstrate device 1 triggering device 2.
+The relay has now been moved to ESP #2, the alarm node. ESP #1 should become the clean monitoring node with PIR, reed, and temperature only after openHAB relay control is moved to `safety_alarm_1`.
 
 
-The current monitoring node also uses:
+The current monitoring node uses:
 
 ```text
 GPIO2  (D4) -> DS18x20
 GPIO4  (D2) -> Switch1
 GPIO12 (D6) -> Switch2
+```
+
+The alarm node relay uses:
+
+```text
+ESP #2 topic: safety_alarm_1
+GPIO5 (D1) -> Relay1
 ```
 
 The reed module has been verified with a magnet. At first, Tasmota reported `Switch2` as `TOGGLE`, which proved that the input was working but was not clean enough for the openHAB `Door/Reed` switch item. The following Tasmota console command was necessary so the reed switch reports explicit `ON` and `OFF` states:
@@ -384,8 +395,8 @@ MQT: Connected
 You can also use MQTT Explorer or the Mosquitto command-line clients to inspect the topics and publish a test command. This config expects these topics:
 
 ```text
-Relay state:    stat/safety_monitor_1/POWER
-Relay command:  cmnd/safety_monitor_1/POWER
+Relay state:    stat/safety_alarm_1/POWER
+Relay command:  cmnd/safety_alarm_1/POWER
 Motion state:   stat/safety_monitor_1/RESULT
 ```
 
@@ -418,7 +429,7 @@ The Lab 1 MQTT topic answers were:
 Connection status topic: tele/safety_monitor_1/LWT
 Temperature data topic:  tele/safety_monitor_1/SENSOR
 Command topic prefix:    cmnd/safety_monitor_1/
-Relay command topic:     cmnd/safety_monitor_1/POWER
+Relay command topic:     cmnd/safety_alarm_1/POWER
 ```
 
 Everything below `tele/safety_monitor_1/` comes from the ESP8266/Tasmota device. Everything below `$SYS` is Mosquitto broker status information, not device data.

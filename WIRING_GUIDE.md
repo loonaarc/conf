@@ -67,7 +67,6 @@ The current working monitoring-node setup is:
 ```text
 D4 / GPIO2 -> DS18x20 temperature sensor
 D2 / GPIO4 -> PIR motion sensor as Switch1
-D1 / GPIO5 -> Relay1, current test actuator
 D6 / GPIO12 -> Reed switch as Switch2
 ```
 
@@ -76,7 +75,6 @@ Recommended Tasmota module settings for this setup:
 ```text
 GPIO2  (D4) -> DS18x20
 GPIO4  (D2) -> Switch1
-GPIO5  (D1) -> Relay1
 GPIO12 (D6) -> Switch2
 ```
 
@@ -202,9 +200,9 @@ If Tasmota telemetry shows `"Switch2":"OFF"` but no `Switch2` change appears in 
 
 ## Alarm Node
 
-The alarm node should be separate from the monitoring node.
+The alarm node is separate from the monitoring node.
 
-During the step-by-step build, the relay can stay on ESP #1 as a local test actuator. In the final architecture, the main alarm relay/buzzer should move to ESP #2 so that a sensor event on device 1 can trigger an actuator on device 2.
+The relay has been moved to ESP #2 so that a sensor event on ESP #1 can later trigger an actuator on ESP #2.
 
 Recommended first version:
 
@@ -213,6 +211,13 @@ Recommended first version:
 | Relay module signal | `D1` / GPIO5 |
 | Active buzzer signal | `D5` / GPIO14 or `D6` / GPIO12 |
 | GND | `GND` |
+
+Current ESP #2 Tasmota setting:
+
+```text
+GPIO5 (D1) -> Relay1
+Topic -> safety_alarm_1
+```
 
 Be careful with current:
 
@@ -270,7 +275,7 @@ PIR on Switch1: yes, publishes stat/safety_monitor_1/RESULT
 DS18B20 temperature: yes, publishes tele/safety_monitor_1/SENSOR
 Switch2 in telemetry: yes
 Reed change event: yes, publishes Switch2 when triggered by magnet
-Relay shield on D1: yes, clicks when toggled
+ESP #2 relay on safety_alarm_1: yes, clicks when toggled in Tasmota
 ```
 
 Important MQTT Explorer note:
