@@ -24,25 +24,25 @@ sitemap safety_monitor label="Safety Monitor"
         Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
 
         // Vibration state from Switch1 on ESP #3.
-        Text item=Vibration label="Vibration [%s]" icon="vibration"
+        Text item=Vibration label="Vibration [%s]" icon="energy"
 
         // Raw microphone analog value from ADC on ESP #3.
-        Text item=SoundLevel label="Sound level [%.0f]" icon="sound"
+        Text item=SoundLevel label="Sound level [%.0f]" icon="microphone"
 
         // Touch state from Switch2 on ESP #3.
-        Text item=Touch label="Touch [%s]" icon="touch"
+        Text item=Touch label="Touch [%s]" icon="returnpipe"
     }
 
     // Control frame contains local openHAB controls.
     Frame label="Control"
     {
         // Enables or disables the rule that toggles the relay on motion.
-        Switch item=MotionAutomation label="Motion automation"
+        Switch item=MotionAutomation label="Motion automation" icon="presence"
 
-        Switch item=Buzzer label="Buzzer power"
-        Slider item=BuzzerLevel label="Buzzer intensity"
-        
+        Switch item=Buzzer label="Buzzer power" icon="siren"
+        Slider item=BuzzerLevel label="Buzzer intensity" icon="soundvolume"
+
         // Manual relay control; this should click the relay shield.
-        Switch item=Relay label="Relay"
+        Switch item=Relay label="Relay" icon="wallswitch"
     }
 }
