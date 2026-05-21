@@ -25,10 +25,12 @@ Number Temperature "Temperature [%.1f C]" { channel="mqtt:topic:safety_monitor_1
 Switch Relay "Relay" { channel="mqtt:topic:safety_alarm_1:relay" }
 
 // Buzzer actuator on ESP #2.
-// Linked to the MQTT buzzer channel, so openHAB can read and command the buzzer.
 Switch Buzzer "Buzzer" { channel="mqtt:topic:safety_alarm_1:buzzerPower" }
 
-Dimmer BuzzerLevel "Buzzer Level [%d %%]" { channel="mqtt:topic:safety_alarm_1:buzzerLevel" }
+// Buzzer intensity level from 0 to 100%.
+Dimmer BuzzerLevel "Buzzer Intensity [%d %%]"
+
+Dimmer BuzzerCommand "Buzzer Command [%d %%]" { channel="mqtt:topic:safety_alarm_1:buzzerLevel" }
 
 String Vibration "Vibration [%s]" { channel="mqtt:topic:safety_context_1:vibration" }
 

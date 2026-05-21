@@ -39,9 +39,9 @@ sitemap safety_monitor label="Safety Monitor"
         // Enables or disables the rule that toggles the relay on motion.
         Switch item=MotionAutomation label="Motion automation"
 
-        Switch item=Buzzer label="Buzzer"
-        Slider item=BuzzerLevel label="Buzzer level"
-
+        Switch item=Buzzer label="Buzzer power"
+        Slider item=BuzzerLevel label="Buzzer intensity"
+        
         // Manual relay control; this should click the relay shield.
         Switch item=Relay label="Relay"
     }

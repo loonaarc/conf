@@ -2,26 +2,53 @@
 File purpose:
 This file contains openHAB automation rules for the safety-monitoring project.
 
-Current rule:
-When PIR motion is detected, openHAB toggles the relay if automation is enabled.
+Current behavior:
+- Motion, door, or vibration can trigger the alarm node.
+- Touch on the context node acknowledges/silences the alarm.
 */
 
-// Rule name shown in logs.
-rule "Motion and Door Toggles Relay"
+rule "Safety Event Triggers Alarm"
 when
-    // Trigger: run this rule when the Motion item changes to ON.
-    Item Motion changed to ON and
-    // Trigger: run this rule when the Door item changes to ON.
-    Item Door changed to ON
+    Item Motion changed to ON or
+    Item Door changed to ON or
+    Item Vibration received update "TOGGLE"
 then
-    // Only run the relay action if the local automation switch is enabled.
     if (MotionAutomation.state == ON) {
-        // If the relay is currently ON, switch it OFF.
-        if (Relay.state == ON) {
-            Relay.sendCommand(OFF)
-        // Otherwise, switch it ON.
-        } else {
-            Relay.sendCommand(ON)
-        }
+        Relay.sendCommand(ON)
+        Buzzer.sendCommand(ON)
+    }
+end
+
+rule "Touch Acknowledges Alarm"
+when
+    Item Touch received update "TOGGLE"
+then
+    Relay.sendCommand(OFF)
+    Buzzer.sendCommand(OFF)
+    BuzzerLevel.sendCommand(0)
+end
+
+rule "Buzzer Power Uses Selected Intensity"
+when
+    Item Buzzer received command ON
+then
+    var Number level = 50
+
+    if (BuzzerLevel.state != NULL && BuzzerLevel.state != UNDEF) {
+        level = BuzzerLevel.state as Number
+    } else {
+        BuzzerLevel.postUpdate(level)
+    }
+
+    BuzzerCommand.sendCommand(level.intValue)
+end
+
+rule "Buzzer Intensity Changes While On"
+when
+    Item BuzzerLevel changed
+then
+    if (Buzzer.state == ON && BuzzerLevel.state != NULL && BuzzerLevel.state != UNDEF) {
+        val Number level = BuzzerLevel.state as Number
+        BuzzerCommand.sendCommand(level.intValue)
     }
 end
