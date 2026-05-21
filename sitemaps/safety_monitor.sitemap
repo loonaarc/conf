@@ -22,6 +22,15 @@ sitemap safety_monitor label="Safety Monitor"
 
         // DS18B20 temperature from Tasmota SENSOR telemetry.
         Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
+
+        // Vibration state from Switch1 on ESP #3.
+        Text item=Vibration label="Vibration [%s]" icon="vibration"
+
+        // Raw microphone analog value from ADC on ESP #3.
+        Text item=SoundLevel label="Sound level [%.0f]" icon="sound"
+
+        // Touch state from Switch2 on ESP #3.
+        Text item=Touch label="Touch [%s]" icon="touch"
     }
 
     // Control frame contains local openHAB controls.

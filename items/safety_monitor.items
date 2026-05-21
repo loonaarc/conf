@@ -30,6 +30,12 @@ Switch Buzzer "Buzzer" { channel="mqtt:topic:safety_alarm_1:buzzerPower" }
 
 Dimmer BuzzerLevel "Buzzer Level [%d %%]" { channel="mqtt:topic:safety_alarm_1:buzzerLevel" }
 
+String Vibration "Vibration [%s]" { channel="mqtt:topic:safety_context_1:vibration" }
+
+String Touch "Touch [%s]" { channel="mqtt:topic:safety_context_1:touch" }
+
+Number SoundLevel "Sound Level [%.0f]" { channel="mqtt:topic:safety_context_1:soundLevel" }
+
 // Local openHAB-only switch.
 // Not linked to MQTT; it enables or disables the motion automation rule.
 Switch MotionAutomation "Motion automation"

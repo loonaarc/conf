@@ -76,3 +76,24 @@ Thing mqtt:topic:safety_alarm_1 "Safety Alarm Node" (mqtt:broker:mosquitto) {
 
     
 }
+
+Thing mqtt:topic:safety_context_1 "Safety Context Node" (mqtt:broker:mosquitto) {
+    Channels:
+        // Vibration sensor channel.
+        Type string : vibration "Vibration" [
+            stateTopic="stat/safety_context_1/RESULT",
+            transformationPattern="JSONPATH:$.Switch1.Action"
+        ]
+
+        // Analog microphone sound level channel.
+        Type number : soundLevel "Sound Level" [
+            stateTopic="tele/safety_context_1/SENSOR",
+            transformationPattern="JSONPATH:$.ANALOG.A0"
+        ]
+
+        // Touch sensor channel.
+        Type string : touch "Touch" [
+            stateTopic="stat/safety_context_1/RESULT",
+            transformationPattern="JSONPATH:$.Switch2.Action"
+        ]
+}
