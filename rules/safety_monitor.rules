@@ -7,13 +7,22 @@ Current behavior:
 - Touch on the context node acknowledges/silences the alarm.
 */
 
-rule "Safety Event Triggers Alarm"
+rule "Door And Motion Trigger Alarm"
 when
-    Item Motion changed to ON or
-    Item Door changed to ON or
-    Item Vibration received update "TOGGLE"
+    Item Motion changed or
+    Item Door changed
 then
-    if (MotionAutomation.state == ON) {
+    if (MotionAutomation.state == ON && Door.state == ON && Motion.state == ON) {
+        Relay.sendCommand(ON)
+        Buzzer.sendCommand(ON)
+    }
+end
+
+rule "Door And Vibration Trigger Alarm"
+when
+    Item Vibration received update "ON"
+then
+    if (MotionAutomation.state == ON && Door.state == ON) {
         Relay.sendCommand(ON)
         Buzzer.sendCommand(ON)
     }
@@ -21,11 +30,10 @@ end
 
 rule "Touch Acknowledges Alarm"
 when
-    Item Touch received update "TOGGLE"
+    Item Touch received update "ON"
 then
     Relay.sendCommand(OFF)
     Buzzer.sendCommand(OFF)
-    BuzzerLevel.sendCommand(0)
 end
 
 rule "Buzzer Power Uses Selected Intensity"
