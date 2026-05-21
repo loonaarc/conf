@@ -307,7 +307,9 @@ cd C:\Users\lil\openhab-5.1.4
 
 The script opens:
 
-- Tasmota web UI for ESP #1
+- Tasmota web UI for ESP #1 Safety Monitor: `http://192.168.43.223`
+- Tasmota web UI for ESP #2 Safety Alarm: `http://192.168.43.110`
+- Tasmota web UI for ESP #3 Safety Context: `http://192.168.43.240`
 - Mosquitto
 - MQTT Explorer
 - openHAB

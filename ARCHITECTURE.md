@@ -227,7 +227,9 @@ The relay and buzzer hardware have moved to ESP #2. The next rule step is to com
 
 [scripts/start_safety_monitor.ps1](scripts/start_safety_monitor.ps1) opens the local demo tools:
 
-- Tasmota web UI
+- Tasmota web UI for ESP #1 Safety Monitor
+- Tasmota web UI for ESP #2 Safety Alarm
+- Tasmota web UI for ESP #3 Safety Context
 - Mosquitto
 - MQTT Explorer
 - openHAB
