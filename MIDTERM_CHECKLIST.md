@@ -10,7 +10,7 @@ Maximum score: 20 points.
 | --- | --- | --- |
 | Configure 2x D1 mini devices | Done: ESP #1 monitoring node and ESP #2 alarm node; ESP #3 context node is extra progress | Show nodes during demo |
 | At least one actuator or sensor per D1 mini | Done: ESP #1 has PIR/reed/DS18B20; ESP #2 has relay/buzzer; ESP #3 has vibration/touch/microphone | Show hardware and UI |
-| Network setup shown | Partly documented | Add a simple network plan diagram |
+| Network setup shown | Done: architecture text and `docs/network-plan.puml` | Show or render the PlantUML network plan |
 | Mosquitto broker installed | Done | Show Mosquitto running during demo |
 | Device 1 MQTT access | Done: `safety_monitor_1` | Show in MQTT Explorer |
 | Device 2 MQTT access | Done: `safety_alarm_1` relay, buzzer power, and dimmer topics are visible | Show `safety_alarm_1` in MQTT Explorer |
@@ -82,7 +82,7 @@ Capture or show:
 - openHAB Basic UI `safety_monitor`
 - Manual actuator control from openHAB
 - Basic rule behavior
-- Network plan with D1 nodes, Mosquitto, openHAB, browser, and MQTT Explorer
+- Network plan with D1 nodes, Mosquitto, openHAB, browser, MQTT Explorer, and GeoSphere HTTP feed
 - HTTP binding value in openHAB UI
 
 ## Next Practical Steps
@@ -90,6 +90,6 @@ Capture or show:
 1. Capture the final Basic UI including External Safety Context.
 2. Capture or keep the `events.log` proof for the rule behavior.
 3. Show MQTT Explorer with all three node topics.
-4. Prepare a short verbal walkthrough of MQTT vs HTTP roles.
-5. Mark the evidence screenshots as captured in `EVIDENCE.md`.
+4. Show or render `docs/network-plan.puml`.
+5. Prepare a short verbal walkthrough of MQTT vs HTTP roles.
 6. Keep remaining final-project work separate: persistence, security notes, LWT status, and TinyML/risk scoring.

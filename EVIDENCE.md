@@ -163,7 +163,7 @@ This proves that Mosquitto is the communication layer between the distributed Ta
 
 ## 14. HTTP Binding: External Safety Context
 
-![alt text](image.png)
+![openHAB GeoSphere Austria external safety context](docs/evidence/14-openhab-geosphere-external-safety-context.png)
 
 Figure 14 shows openHAB reading official GeoSphere Austria warning data through the HTTP binding.
 
@@ -180,6 +180,27 @@ This proves that the project uses both communication paths required for the safe
 ```text
 MQTT -> local distributed IoT nodes
 HTTP -> external official safety context
+```
+
+## 15. Network Plan
+
+![Network plan for distributed safety monitoring](docs/evidence/15-network-plan.png)
+
+The network plan is documented as PlantUML in:
+
+```text
+docs/network-plan.puml
+```
+
+It shows:
+
+```text
+ESP #1 Safety Monitor  -> Wi-Fi -> Mosquitto -> openHAB
+ESP #3 Safety Context  -> Wi-Fi -> Mosquitto -> openHAB
+openHAB rules          -> Mosquitto -> ESP #2 Safety Alarm
+GeoSphere Austria API  -> HTTP binding -> openHAB
+MQTT Explorer          -> Mosquitto for debugging/evidence
+Browser                -> openHAB Basic UI and Tasmota web UIs
 ```
 
 ## Evidence Chain

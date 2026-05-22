@@ -3,8 +3,11 @@ File purpose:
 This file contains openHAB automation rules for the safety-monitoring project.
 
 Current behavior:
-- Motion, door, or vibration can trigger the alarm node.
+- The alarm only triggers when automation is enabled and the door/reed state is ON
+  together with either PIR motion or a vibration event.
 - Touch on the context node acknowledges/silences the alarm.
+- Buzzer power and buzzer intensity are separated: the slider stores the selected
+  intensity, while BuzzerCommand sends that value to the Tasmota PWM output.
 */
 
 rule "Door And Motion Trigger Alarm"

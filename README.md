@@ -1,306 +1,74 @@
-# Distributed Edge-Based Safety Monitoring Configuration
+# Distributed Edge-Based Safety Monitoring
 
-This folder contains the openHAB configuration for the distributed edge-based safety monitoring project. Use this README to start the system, open the UI, and troubleshoot the most common startup problems.
+This repository contains the openHAB configuration and documentation for a distributed safety-monitoring prototype built with ESP8266 D1 Mini nodes, Tasmota, MQTT, Mosquitto, openHAB, and an external HTTP safety-context feed.
 
-## What Is Included
+The project demonstrates a local safety system where multiple sensor nodes publish events through MQTT, openHAB combines those events in rules, and a separate alarm node reacts with a relay and buzzer. In addition, openHAB reads official GeoSphere Austria warning data through the HTTP binding.
 
-- `things/mqtt.things` defines the MQTT broker and D1 Mini MQTT channels.
-- `things/http.things` defines the GeoSphere Austria HTTP warning feed.
-- `items/safety_monitor.items` defines the openHAB items shown in the UI and used by rules.
-- `rules/safety_monitor.rules` reacts to combined safety events and controls the alarm node.
-- `sitemaps/safety_monitor.sitemap` defines the current Basic UI page.
-- `services/addons.cfg` installs the required openHAB add-ons on startup.
+## Current Prototype
 
-For the system design and data flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
+| Node / Component | Role | Implemented Hardware / Data |
+| --- | --- | --- |
+| ESP #1 `safety_monitor_1` | Monitoring node | PIR motion, reed/door sensor, DS18B20 temperature |
+| ESP #2 `safety_alarm_1` | Alarm actuator node | Relay, PWM buzzer |
+| ESP #3 `safety_context_1` | Context and acknowledgement node | Vibration sensor, analog microphone value, touch sensor |
+| Mosquitto | MQTT broker | Local message broker for all Tasmota/openHAB MQTT traffic |
+| openHAB | UI and rule engine | Basic UI, MQTT binding, HTTP binding, automation rules |
+| GeoSphere Austria | External safety context | Official warning area, warning count, warning level, warning text |
 
-For the larger safety-monitoring project plan, see [PROJECT_PLAN.md](PROJECT_PLAN.md).
+## Implemented Behavior
 
-For breadboard, sensor, and pin wiring notes, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
-
-For the available hardware modules and project-relevant selection, see [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md).
-
-For final grading requirements and missing deliverables, see [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md).
-
-For the Lab 4 mid-term project check requirements, see [MIDTERM_CHECKLIST.md](MIDTERM_CHECKLIST.md).
-
-For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENCE.md).
-
-## Requirements
-
-- openHAB 5.1.4 unpacked locally.
-- Java available for openHAB.
-- Mosquitto MQTT broker running on the same machine.
-- Tasmota devices reachable by MQTT.
-- Internet access for the GeoSphere Austria HTTP warning feed.
-- The current project MQTT topics: `safety_monitor_1`, `safety_alarm_1`, and `safety_context_1`.
-- Visual Studio Code with the openHAB extension is useful for editing the configuration files.
-
-The required openHAB add-ons are configured in `services/addons.cfg`:
+The current rule logic reduces false alarms by requiring combined evidence:
 
 ```text
-binding = mqtt,http
-transformation = jsonpath
-ui = basic
+door AND (motion OR vibration)
+  -> relay ON
+  -> buzzer ON at selected intensity
+
+touch acknowledgement
+  -> relay OFF
+  -> buzzer OFF
 ```
 
-## Device Preparation
+The buzzer intensity slider stores the selected intensity. When the buzzer is switched on, openHAB sends that selected value to the Tasmota PWM output.
 
-The D1 Mini was flashed with the Tasmota desktop flasher, not the browser-based web installer.
+## Mid-Term Requirement Coverage
 
-The relevant preparation steps from Lab 1 are:
+| Requirement | Status |
+| --- | --- |
+| 2x D1 Mini devices with at least one sensor/actuator each | Done, with 3 nodes implemented |
+| Network setup and network plan | Done, see `docs/network-plan.puml` and evidence image |
+| Mosquitto broker | Done |
+| Device 1 and 2 MQTT access | Done |
+| openHAB installed | Done |
+| Basic UI sitemap | Done |
+| Display sensor/actuator value in openHAB UI | Done |
+| Manual actuator action via openHAB UI | Done |
+| External webservice through HTTP binding | Done with GeoSphere Austria warnings |
+| Basic openHAB rules | Done |
 
-1. Connect the D1 Mini with a USB data cable.
-2. Open the Tasmota desktop flashing app.
-3. Select the new COM port that appears after connecting the D1 Mini.
-4. Flash the default English Tasmota firmware, for example `tasmota.bin`.
-5. Configure Wi-Fi after flashing, either through the Tasmota hotspot or through the desktop app's configuration feature.
-6. Open the Tasmota web interface by using the device IP address.
-7. Configure the module and GPIOs for the attached hardware.
-8. Configure MQTT in the Tasmota web interface with the Mosquitto broker address, username, and password if authentication is used.
+## Demo Flow
 
-For the relay shield, the lab material uses the relay input on `D1`. After configuration, the relay should be switchable from the Tasmota web interface or console before openHAB is added.
-
-## Flash With Tasmotizer
-
-Use this for D1 Mini boards that do not already run Tasmota.
-
-1. Unplug the D1 Mini.
-2. Open Tasmotizer.
-3. Plug in the D1 Mini with a USB data cable.
-4. Refresh the COM port list.
-5. Select the new COM port that appeared.
-6. Select the firmware image:
+1. Start Mosquitto, MQTT Explorer, openHAB, and the Tasmota web UIs.
+2. Open the Basic UI:
 
 ```text
-tasmota.bin
+http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
-7. If the board is unknown or previously used, enable erase before flashing.
-8. Click:
-
-```text
-Tasmotize!
-```
-
-9. Wait until flashing is finished.
-
-After flashing, configure Wi-Fi. There are two possible ways.
-
-### Option A: Send Wi-Fi Config From Tasmotizer
-
-This is the quicker method from the Lab 1 instructions.
-
-1. Keep the D1 Mini connected after flashing.
-2. In Tasmotizer, click:
-
-```text
-Send config
-```
-
-3. Enter the Wi-Fi network name and password.
-
-For the lab network, the Wi-Fi SSID used by the first D1 was:
-
-```text
-realme C3
-```
-
-For the context node, the following `Send config` values were used successfully:
-
-```text
-Wi-Fi SSID:      realme C3
-MQTT host:       192.168.43.26
-MQTT port:       1883
-MQTT topic:      safety_context_1
-MQTT full topic: %prefix%/%topic%/
-Friendly name:   Safety Context 1
-MQTT user:       empty
-MQTT password:   empty
-```
-
-After sending the config, the node was found with:
-
-```text
-IP address: 192.168.43.240
-```
-
-4. Save/send the configuration.
-5. Wait for the D1 Mini to restart and join the Wi-Fi.
-6. Check the router/hotspot device list or scan the network to find the new IP address.
-
-### Option B: Configure Through Tasmota Hotspot
-
-If `Send config` does not work, use the temporary Tasmota access point.
-
-1. After flashing, check your laptop Wi-Fi list.
-2. Connect to the new Tasmota hotspot, usually named like:
-
-```text
-tasmota-xxxx
-```
-
-3. Open:
-
-```text
-http://192.168.4.1
-```
-
-4. Enter the Wi-Fi SSID and password.
-5. Save and wait for the D1 Mini to restart.
-6. Find the new IP address in the router/hotspot device list or by scanning the network.
-
-## Power and Open Tasmota
-
-Tasmota is the firmware running on the D1 Mini. There is no separate Tasmota program to start on the laptop. To make the Tasmota web interface available:
-
-1. Power the D1 Mini with the USB cable.
-2. Make sure the laptop is connected to the same network as the D1 Mini. In the lab this was the `192.168.43.x` network.
-3. Open a browser on the laptop.
-4. Go to the Tasmota device IP address:
-
-```text
-http://192.168.43.223/
-```
-
-In the lab, the device was identified as:
-
-```text
-IP address:  192.168.43.223
-MAC address: A8:48:FA:C1:7D:DD
-Hostname:    tasmota-C17DDD-7645
-Topic:       safety_monitor_1
-```
-
-If the page does not open, check that the D1 Mini has power and still has the same IP address. The laptop IP was checked with:
-
-```powershell
-ipconfig
-```
-
-In the lab, the laptop address used as MQTT host was:
-
-```text
-192.168.43.26
-```
-
-The local network scan command used during the lab was:
-
-```cmd
-for /L %i in (2,1,254) do @ping -n 1 -w 10 192.168.43.%i >nul
-```
-
-## Pinout
-
-For sensor and breadboard wiring details, including the DS18B20 temperature sensor, PIR sensor, and reed switch, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
-
-Project wiring convention:
-
-```text
-D1 Mini 3V3 -> breadboard red power rail
-D1 Mini GND -> breadboard blue ground rail
-```
-
-Use 3.3V for sensor modules in this project unless a specific module explicitly requires 5V.
-
-## Tasmota Module Settings
-
-After the D1 Mini is powered and the Tasmota page is reachable, open:
-
-```text
-Configuration -> Configure Module
-```
-
-The relay shield uses:
-
-```text
-GPIO5 (D1) -> Relay1
-```
-
-The relay has now been moved to ESP #2, the alarm node. ESP #1 should become the clean monitoring node with PIR, reed, and temperature only after openHAB relay control is moved to `safety_alarm_1`.
-
-
-The current monitoring node uses:
-
-```text
-GPIO2  (D4) -> DS18x20
-GPIO4  (D2) -> Switch1
-GPIO12 (D6) -> Switch2
-```
-
-The alarm node relay uses:
-
-```text
-ESP #2 topic: safety_alarm_1
-GPIO5 (D1) -> Relay1
-GPIO14 (D5) -> PWM1, buzzer
-```
-
-The context node uses:
-
-```text
-ESP #3 topic: safety_context_1
-GPIO5 (D1) -> Switch1, vibration sensor
-GPIO4 (D2) -> None
-GPIO14 (D5) -> Switch2, touch / acknowledge sensor
-GPIO17 (A0) -> ADC Input / Analog, microphone AO
-```
-
-The buzzer did not behave like a simple active buzzer. It only clicked when configured as a relay-style output, but worked after setting `GPIO14 (D5) -> PWM1`. Useful Tasmota console commands:
-
-```text
-Dimmer 50
-POWER2 OFF
-```
-
-The reed module has been verified with a magnet. At first, Tasmota reported `Switch2` as `TOGGLE`, which proved that the input was working but was not clean enough for the openHAB `Door/Reed` switch item. The following Tasmota console command was necessary so the reed switch reports explicit `ON` and `OFF` states:
-
-```text
-SwitchMode2 1
-```
-
-If the displayed state is backwards, use inverted follow mode:
-
-```text
-SwitchMode2 2
-```
-
-After saving, the device restarts.
-
-Useful Tasmota console commands for the relay:
-
-```text
-POWER ON
-POWER OFF
-POWER TOGGLE
-```
-
-The commands are not case-sensitive.
-
-If Tasmota shows `POWER ON/OFF` but the relay does not click, check the relay hardware wiring. When the relay shield was plugged directly on top of the D1 Mini, the shield pins likely provided signal, VCC, and GND automatically. On a breadboard, the relay needs its signal pin on `D1 / GPIO5`, plus the correct relay supply pin and shared GND.
-
-To print the full Tasmota status report:
-
-```text
-status 0
-```
-
-Important values from the lab status output:
-
-```text
-DNS server:       192.168.43.1
-MQTT user:        DVES_USER
-Temperature:      27.9 C
-TelePeriod:       300 seconds
-Tasmota version:  15.3.0
-```
-
-## Start Mosquitto
-
-Start Mosquitto before openHAB so the MQTT bridge can connect.
-
-## Start The Demo Tools With One Script
-
-For convenience, the project includes a helper script:
+3. Show the three node groups in the UI:
+   - motion, door/reed, temperature
+   - vibration, sound level, touch
+   - relay, buzzer power, buzzer intensity
+4. Show the GeoSphere Austria external safety context.
+5. Enable `Motion automation`.
+6. Trigger door + motion, or door + vibration.
+7. Show that openHAB commands the ESP #2 relay and buzzer.
+8. Touch the touch sensor to acknowledge and silence the alarm.
+9. Show `events.log` and/or MQTT Explorer as proof of the data flow.
+
+## Start Script
+
+From the openHAB root folder:
 
 ```powershell
 cd C:\Users\lil\openhab-5.1.4
@@ -309,290 +77,52 @@ cd C:\Users\lil\openhab-5.1.4
 
 The script opens:
 
-- Tasmota web UI for ESP #1 Safety Monitor: `http://192.168.43.223`
-- Tasmota web UI for ESP #2 Safety Alarm: `http://192.168.43.110`
-- Tasmota web UI for ESP #3 Safety Context: `http://192.168.43.240`
+- Tasmota UI for ESP #1, ESP #2, and ESP #3
 - Mosquitto
 - MQTT Explorer
 - openHAB
-- openHAB Basic UI at `http://localhost:8080/basicui/app?sitemap=safety_monitor`
+- openHAB Basic UI
 
-Keep the Mosquitto and openHAB windows open while testing. MQTT Explorer may still need the saved broker connection selected manually.
+MQTT Explorer may still require selecting the saved broker connection manually.
 
-In this lab setup, Mosquitto could be started simply by opening the Mosquitto installation folder "C:\Program Files\Mosquitto\mosquitto.exe" and double-clicking:
+## Important Files
 
-```text
-mosquitto.exe
-```
+| File | Purpose |
+| --- | --- |
+| `things/mqtt.things` | MQTT broker and Tasmota channels |
+| `things/http.things` | GeoSphere Austria HTTP warning channels |
+| `items/safety_monitor.items` | openHAB Items used by UI and rules |
+| `rules/safety_monitor.rules` | Combined safety-event rules and buzzer behavior |
+| `sitemaps/safety_monitor.sitemap` | Basic UI layout |
+| `services/addons.cfg` | Required openHAB add-ons |
+| `docs/network-plan.puml` | PlantUML network plan source |
+| `EVIDENCE.md` | Screenshots, photos, and proof chain |
 
-Leave the Mosquitto window open while openHAB is running.
-
-On Windows, if Mosquitto is installed as a service:
-
-```powershell
-Get-Service mosquitto
-Start-Service mosquitto
-```
-
-If you run Mosquitto manually, start it with its normal executable or service shortcut. The broker must listen on:
+Required add-ons:
 
 ```text
-localhost:1883
+binding = mqtt,http
+transformation = jsonpath
+ui = basic
 ```
 
-The following manual configuration is only needed if double-clicking `mosquitto.exe` does not work or if a specific listener configuration is required.
-
-Create or use this file:
-
-```text
-C:\Programme\Mosquitto\mosquitto.conf
-```
-
-If Windows shows the English program folder name, the same location may appear as:
-
-```text
-C:\Program Files\Mosquitto
-```
-
-With this content:
-
-```text
-listener 1883
-allow_anonymous true
-```
-
-If Mosquitto is already running as a service, stop it from an administrator terminal:
-
-```cmd
-net stop mosquitto
-```
-
-Then open a command prompt in the Mosquitto folder and start the broker with the config file:
-
-```cmd
-mosquitto -c mosquitto.conf -v
-```
-
-Optional broker test with two additional terminals:
-
-```cmd
-mosquitto_sub -t test
-```
-
-```cmd
-mosquitto_pub -t test -m hello
-```
-
-The subscriber terminal should print:
-
-```text
-hello
-```
-
-## Check Tasmota MQTT Connection
-
-After Mosquitto is running, check that Tasmota can connect to it before starting openHAB.
-
-In the Tasmota web interface, configure MQTT under:
-
-```text
-Configuration -> Configure MQTT
-```
-
-Use:
-
-```text
-Host: 192.168.43.26
-Port: 1883
-User/password: empty, unless authentication is enabled
-```
-
-After saving, the Tasmota console should show:
-
-```text
-MQT: Attempting connection...
-MQT: Connected
-```
-
-You can also use MQTT Explorer or the Mosquitto command-line clients to inspect the topics and publish a test command. This config expects these topics:
-
-```text
-Relay state:    stat/safety_alarm_1/POWER
-Relay command:  cmnd/safety_alarm_1/POWER
-Buzzer command: cmnd/safety_alarm_1/Dimmer
-Buzzer off:     cmnd/safety_alarm_1/POWER2
-Motion state:   stat/safety_monitor_1/RESULT
-Context events: stat/safety_context_1/RESULT
-Context sensor: tele/safety_context_1/SENSOR
-```
-
-For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
-
-1. Start Mosquitto.
-2. Open MQTT Explorer.
-3. Connect to the broker at `192.168.43.26` or `localhost`, port `1883`, depending on where MQTT Explorer is running.
-4. Trigger the PIR or reed switch.
-5. Check that `stat/safety_monitor_1/RESULT` changes.
-6. Check that the working DS18x20 sensor publishes temperature under `tele/safety_monitor_1/SENSOR`.
-7. Trigger the vibration or touch sensor.
-8. Check that `stat/safety_context_1/RESULT` changes.
-9. Make sound near the microphone.
-10. Check whether `tele/safety_context_1/SENSOR` shows a changing `ANALOG.A0` value.
-
-Verified monitoring-node MQTT results:
-
-```text
-tele/safety_monitor_1/LWT = Online
-stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"ON"}}
-stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"OFF"}}
-stat/safety_monitor_1/RESULT includes Switch2 when the reed is triggered by a magnet
-tele/safety_monitor_1/SENSOR includes Switch1, Switch2, and DS18B20 temperature
-stat/safety_context_1/RESULT includes Switch1 for vibration and Switch2 for touch events
-tele/safety_context_1/SENSOR includes ANALOG.A0 for the microphone
-```
-
-For the context node, use this verified Tasmota console command set:
-
-```text
-SetOption114 1
-SwitchMode1 1
-SwitchMode2 1
-```
-
-`SetOption114 1` detaches the sensor switches from Tasmota's default power behavior. The goal is to see `Switch1` and `Switch2` action messages instead of `POWER` messages for the context node.
-
-If only `Switch1` updates immediately, that is still useful progress: the PIR path works. The reed switch creates `Switch2` messages on `stat/safety_monitor_1/RESULT` only when its digital output changes. If telemetry shows `"Switch2":"OFF"` but no change event appears, check the reed module `DO` pin, magnet position, shared GND, and the `GPIO12 (D6) -> Switch2` Tasmota setting.
-
-If your device has a different Tasmota topic, update `things/mqtt.things`.
-
-The Lab 1 MQTT topic answers were:
-
-```text
-Connection status topic: tele/safety_monitor_1/LWT
-Temperature data topic:  tele/safety_monitor_1/SENSOR
-Command topic prefix:    cmnd/safety_monitor_1/
-Relay command topic:     cmnd/safety_alarm_1/POWER
-Buzzer dimmer topic:     cmnd/safety_alarm_1/Dimmer
-Buzzer off topic:        cmnd/safety_alarm_1/POWER2
-```
-
-Everything below `tele/safety_monitor_1/` comes from the ESP8266/Tasmota device. Everything below `$SYS` is Mosquitto broker status information, not device data.
-
-## Start openHAB
-
-From the openHAB root folder, one level above this `conf` folder:
-
-```powershell
-cd C:\Users\lil\openhab-5.1.4
-.\start.bat
-```
-
-Wait until openHAB finishes starting. The first startup can take longer because openHAB installs the configured add-ons.
-
-Then open:
-
-```text
-http://localhost:8080
-```
-
-For the Basic UI sitemap, use:
-
-```text
-http://localhost:8080/basicui/app?sitemap=safety_monitor
-```
-
-## How To Use It
-
-1. Open the Basic UI sitemap.
-2. Use `Relay` to manually switch the ESP #2 Tasmota relay.
-3. Watch `Motion` to see motion state updates from MQTT.
-4. Use `Buzzer` and `Buzzer level` to test the ESP #2 PWM buzzer.
-5. Check `External Safety Context` to verify the GeoSphere Austria HTTP warning feed.
-6. Enable `Motion automation` if the rule should react to safety events.
-
-When `Motion automation` is ON, the rule in `rules/safety_monitor.rules` triggers the alarm node when the door/reed state is active together with motion or vibration. The touch sensor acknowledges the alarm and switches the relay and buzzer off again.
-
-## External Safety Context
-
-The project uses the HTTP binding to read official GeoSphere Austria warnings for Vienna:
-
-```text
-https://warnungen.zamg.at/wsapp/api/getWarningsForCoords?lon=16.3738&lat=48.2082&lang=en
-```
-
-The HTTP thing is defined in:
-
-```text
-things/http.things
-```
-
-The Basic UI shows:
-
-```text
-Warning area
-Active weather warnings
-Warning level
-Warning text
-```
-
-If there are no active warnings, the warning count shows `0` and the warning level/text may show `-`. This is normal and still proves that the HTTP binding is working.
-
-For the project concept, this external safety context can later be used as a risk modifier. For example, vibration during an active storm warning may be treated differently than vibration during normal conditions.
-
-## Console Checks
-
-The project workflow still uses the openHAB console and logs for configuration checks.
-
-You can connect to the console by SSH:
-
-```powershell
-ssh -p 8101 openhab@localhost
-```
-
-The initial password is usually:
-
-```text
-habopen
-```
-
-Useful console checks:
-
-```text
-openhab:things list
-openhab:items list
-openhab:links list
-```
-
-All things should be `ONLINE`. State changes can be checked in:
-
-```text
-C:\Users\lil\openhab-5.1.4\userdata\logs\events.log
-```
-
-## Troubleshooting
-
-If the relay does not switch:
-
-- Check that Mosquitto is running on `localhost:1883`.
-- Check that the Tasmota device is connected to the same MQTT broker.
-- Check that the topic in `things/mqtt.things` matches the Tasmota device topic. The monitoring node now uses `safety_monitor_1`.
-- Check the openHAB log in `C:\Users\lil\openhab-5.1.4\userdata\logs\openhab.log`.
-- Check `events.log` to see whether openHAB receives item state changes.
-
-If the Basic UI page is missing:
-
-- Confirm `ui = basic` is present in `services/addons.cfg`.
-- Restart openHAB and wait for the add-on installation to finish.
-
-If the external warning values are missing:
-
-- Confirm `binding = mqtt,http` is present in `services/addons.cfg`.
-- Confirm `things/http.things` exists.
-- Check whether the laptop has internet access.
-- Open the GeoSphere URL in a browser and confirm it returns JSON.
-
-If motion does not update:
-
-- Confirm the JSONPATH transformation add-on is installed.
-- Check the payload published to `stat/safety_monitor_1/RESULT`.
-- Make sure the payload contains `Switch1.Action`, because the motion channel currently reads `$.Switch1.Action`.
+## Evidence And Documentation
+
+- [EVIDENCE.md](EVIDENCE.md): screenshots/photos for wiring, Tasmota, MQTT Explorer, openHAB UI, rule proof, HTTP binding, and network plan.
+- [ARCHITECTURE.md](ARCHITECTURE.md): architecture and data-flow explanation.
+- [MIDTERM_CHECKLIST.md](MIDTERM_CHECKLIST.md): requirement coverage for the mid-term check.
+- [WIRING_GUIDE.md](WIRING_GUIDE.md): wiring and pinout notes.
+- [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md): available modules and chosen hardware.
+- [PROJECT_PLAN.md](PROJECT_PLAN.md): project direction toward final check and TinyML/risk scoring.
+- [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md): remaining work for the final project.
+- [SETUP_NOTES.md](SETUP_NOTES.md): detailed setup, flashing, MQTT, and troubleshooting notes.
+
+## Current Limitations And Final Direction
+
+The mid-term prototype focuses on a stable vertical slice: distributed nodes, MQTT, openHAB UI, HTTP binding, and rules. For the final project, the planned extensions are:
+
+- risk score item and clearer alarm states
+- persistence/history for selected values
+- LWT/online status for each node
+- security documentation
+- optional TinyML or smarter classification using sound/vibration context

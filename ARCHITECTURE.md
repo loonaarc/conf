@@ -2,6 +2,8 @@
 
 This document describes the current architecture of the distributed edge-based safety monitoring project. For setup and startup commands, see [README.md](README.md). For wiring details, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
 
+The PlantUML network plan is available in [docs/network-plan.puml](docs/network-plan.puml).
+
 ## Current Goal
 
 The current milestone proves two communication chains.
@@ -30,6 +32,8 @@ GeoSphere Austria Warn API
 Together, these chains prove local distributed sensing/actuation and an external webservice input that can later become part of the risk score.
 
 ## System Components
+
+The network plan can be rendered from [docs/network-plan.puml](docs/network-plan.puml). It shows the laptop/openHAB host, Mosquitto, MQTT Explorer, all three ESP/Tasmota nodes, the browser, and the GeoSphere Austria HTTP feed.
 
 ```text
 +-----------------------------+        +-----------------------------+
