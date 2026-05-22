@@ -253,7 +253,7 @@ The final IoT Applications check requires more than just a working sensor. The a
 | Sensor/actuator values in UI | Show motion, door, vibration, sound, alarm state, risk score |
 | Rule where device 1 triggers device 2 | Monitoring node events trigger alarm node actuator |
 | Security documentation | Document Wi-Fi, MQTT, openHAB access, and known lab tradeoffs |
-| HTTP webservice value and rule | Add a weather/location/security-context value via HTTP binding later |
+| HTTP webservice value and rule | GeoSphere Austria warning values are shown; later use warning count/level as a risk modifier |
 | Geolocation map | Add device or monitored-area location later |
 | Persistence and historical values | Add non-default persistence later, for example InfluxDB or JDBC |
 | Customized UI | Rename sitemap/pages around the safety-monitoring use case |
@@ -274,8 +274,8 @@ The Lab 4 mid-term check is a status check, not the final project. The project s
 | Basic UI sitemap | `safety_monitor` sitemap exists |
 | Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay/buzzer controls added |
 | Manual actuator action in UI | ESP #2 relay/buzzer can be controlled from openHAB |
-| External webservice via HTTP binding | Missing, add after ESP #2 manual control |
-| Basic openHAB rules | Started; next useful rule should trigger ESP #2 |
+| External webservice via HTTP binding | Done: GeoSphere Austria warnings in Basic UI |
+| Basic openHAB rules | Done: door AND (motion OR vibration) triggers ESP #2; touch acknowledges |
 
 Mid-term target:
 

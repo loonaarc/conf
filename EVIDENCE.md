@@ -10,12 +10,6 @@ Tip: after pasting an image, keep the short caption below it. The captions can b
 
 Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, and shared 3.3V/GND breadboard rails.
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 2. Monitoring Node Tasmota Module Configuration
 
 ![Monitoring node current Tasmota module configuration](docs/evidence/02-monitor-node-tasmota-current.png)
@@ -27,23 +21,11 @@ D4 / GPIO2  -> DS18x20 temperature sensor
 D6 / GPIO12 -> Switch2, reed switch
 ```
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 3. Tasmota Console: PIR And Reed Events
 
 ![Tasmota console with PIR and reed events](docs/evidence/03-tasmota-console-switch-events.png)
 
 Figure 3 shows the Tasmota console publishing `Switch1` events from the PIR sensor and `Switch2` events from the reed switch.
-
-Status:
-
-```text
-Captured: yes
-```
 
 ## 4. MQTT Explorer: Switch Events
 
@@ -57,12 +39,6 @@ stat/safety_monitor_1/RESULT
 
 This proves that the sensor node publishes PIR and reed events to the MQTT broker.
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 5. MQTT Explorer: Temperature Sensor
 
 ![MQTT Explorer temperature sensor telemetry](docs/evidence/05-mqtt-explorer-temperature-sensor.png)
@@ -75,23 +51,11 @@ tele/safety_monitor_1/SENSOR
 
 This proves that the monitoring node also publishes periodic sensor telemetry.
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 6. Alarm Node Wiring
 
 ![Alarm node wiring](docs/evidence/06-alarm-node-wiring.png)
 
 Figure 6 shows ESP #2, the alarm node, connected to the relay and PWM buzzer actuator.
-
-Status:
-
-```text
-Captured: yes
-```
 
 ## 7. Alarm Node Tasmota Module Configuration
 
@@ -105,23 +69,11 @@ D5 / GPIO14 -> PWM1 buzzer
 Topic       -> safety_alarm_1
 ```
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 8. Safety Context Node Wiring
 
 ![Safety context node wiring](docs/evidence/08-context-node-wiring.png)
 
 Figure 8 shows ESP #3, the safety context node, connected to the vibration sensor, microphone module, and touch sensor.
-
-Status:
-
-```text
-Captured: yes
-```
 
 ## 9. Safety Context Node Tasmota Module Configuration
 
@@ -136,12 +88,6 @@ A0 / GPIO17 -> ADC Input / Analog, microphone AO
 Topic      -> safety_context_1
 ```
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 10. MQTT Explorer: Context Sensor Events And Telemetry
 
 ![Safety context node telemetry](docs/evidence/10-context-node-telemetry-current.png)
@@ -151,12 +97,6 @@ Figure 10 shows MQTT Explorer receiving context-node sensor events and analog mi
 ```text
 stat/safety_context_1/RESULT
 tele/safety_context_1/SENSOR
-```
-
-Status:
-
-```text
-Captured: yes
 ```
 
 Current observation:
@@ -184,12 +124,6 @@ ESP #2 -> relay, buzzer power, buzzer intensity
 ESP #3 -> vibration, sound level, touch acknowledgement
 ```
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 12. Combined Sensor Events Trigger The Alarm Node
 
 ![openHAB events log distributed automation proof](docs/evidence/12-openhab-events-log-distributed-automation.png)
@@ -209,12 +143,6 @@ Figure 12 shows the distributed automation in `events.log`:
 
 This proves the complete path from distributed sensor events through openHAB rule logic to actuator commands on the alarm node.
 
-Status:
-
-```text
-Captured: yes
-```
-
 ## 13. MQTT Explorer: Runtime Topics For All Nodes
 
 ![MQTT Explorer runtime topics for all safety monitor nodes](docs/evidence/13-mqtt-explorer-runtime-topics.png)
@@ -233,10 +161,25 @@ cmnd/safety_alarm_1/Dimmer    -> buzzer intensity command sent through MQTT
 
 This proves that Mosquitto is the communication layer between the distributed Tasmota nodes and openHAB. The monitoring and context nodes publish events, while the alarm node receives actuator commands.
 
-Status:
+## 14. HTTP Binding: External Safety Context
+
+![alt text](image.png)
+
+Figure 14 shows openHAB reading official GeoSphere Austria warning data through the HTTP binding.
+
+The current warning area is:
 
 ```text
-Captured: yes
+Wien-Innere Stadt
+```
+
+The active warning count is currently `0`, so there is no warning level or warning text shown. This is the expected state when GeoSphere Austria has no active warning for the selected coordinates.
+
+This proves that the project uses both communication paths required for the safety-monitoring system:
+
+```text
+MQTT -> local distributed IoT nodes
+HTTP -> external official safety context
 ```
 
 ## Evidence Chain
@@ -254,4 +197,13 @@ The final proof chain for the recorded demo is:
 8. Touch event from ESP #3 acknowledges the alarm
 9. openHAB sends MQTT OFF commands to ESP #2
 10. openHAB automation is disabled from the Basic UI
+```
+
+The external safety-context proof chain is:
+
+```text
+GeoSphere Austria Warn API
+  -> openHAB HTTP binding
+  -> GeoSphere warning Items
+  -> Basic UI External Safety Context frame
 ```

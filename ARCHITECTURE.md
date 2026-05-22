@@ -4,27 +4,30 @@ This document describes the current architecture of the distributed edge-based s
 
 ## Current Goal
 
-The current milestone proves this chain:
+The current milestone proves two communication chains.
+
+Local distributed IoT chain:
 
 ```text
-ESP #1 sensors
-  -> Tasmota
+ESP #1 / ESP #3 sensors
+  -> Tasmota MQTT
   -> Mosquitto MQTT broker
   -> openHAB MQTT binding
-  -> openHAB Items / Basic UI / rule
+  -> openHAB Items / Basic UI / rules
+  -> MQTT commands
+  -> ESP #2 relay and buzzer
 ```
 
-The next larger milestone is:
+External safety-context chain:
 
 ```text
-ESP #1 or ESP #3 sensor event
-  -> MQTT
-  -> openHAB rule
-  -> MQTT command
-  -> ESP #2 alarm actuator
+GeoSphere Austria Warn API
+  -> openHAB HTTP binding
+  -> warning Items
+  -> Basic UI External Safety Context frame
 ```
 
-That step proves that one D1 Mini device can trigger a second D1 Mini device, while a third D1 Mini adds extra context for a stronger risk score.
+Together, these chains prove local distributed sensing/actuation and an external webservice input that can later become part of the risk score.
 
 ## System Components
 
@@ -65,6 +68,18 @@ That step proves that one D1 Mini device can trigger a second D1 Mini device, wh
              +-------------+     | D1 -> Relay1                |
                                  | D5 -> PWM1 buzzer           |
                                  +-----------------------------+
+
+                    +-----------------------------+
+                    | GeoSphere Austria Warn API  |
+                    | HTTP JSON warning data      |
+                    +--------------+--------------+
+                                   |
+                                   | HTTP binding
+                                   v
+                    +--------------+--------------+
+                    | openHAB warning Items       |
+                    | External Safety Context UI  |
+                    +-----------------------------+
 ```
 
 MQTT Explorer is used beside openHAB as a debugging and evidence tool. It connects to the same broker and shows the raw Tasmota topics before openHAB transforms them into Items.
@@ -76,6 +91,10 @@ The project uses openHAB text configuration files:
 ```text
 things/mqtt.things
   defines MQTT broker and MQTT channels
+        |
+        v
+things/http.things
+  defines GeoSphere Austria warning channels
         |
         v
 items/safety_monitor.items
@@ -136,6 +155,7 @@ Meaning:
 Bridge mqtt:broker:mosquitto
 Thing mqtt:topic:safety_monitor_1
 Thing mqtt:topic:safety_alarm_1
+Thing mqtt:topic:safety_context_1
 ```
 
 The bridge connects openHAB to Mosquitto on:
@@ -144,7 +164,7 @@ The bridge connects openHAB to Mosquitto on:
 localhost:1883
 ```
 
-The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor channels. The `safety_alarm_1` Thing represents ESP #2 and exposes the relay and buzzer actuator channels. ESP #3 is wired in hardware and should be added to openHAB next as `safety_context_1`.
+The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor channels. The `safety_alarm_1` Thing represents ESP #2 and exposes the relay and buzzer actuator channels. The `safety_context_1` Thing represents ESP #3 and exposes vibration, touch, and analog sound context.
 
 | Channel | MQTT topic | Transformation | Meaning |
 | --- | --- | --- | --- |
@@ -154,9 +174,9 @@ The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor
 | `relay` | `stat/safety_alarm_1/POWER`, `cmnd/safety_alarm_1/POWER` | none | Reads and commands the alarm relay |
 | `buzzerPower` | `stat/safety_alarm_1/POWER2`, `cmnd/safety_alarm_1/POWER2` | none | Stops or enables the PWM buzzer output |
 | `buzzerLevel` | `cmnd/safety_alarm_1/Dimmer` | none | Sends the PWM buzzer intensity |
-| context vibration, next | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch1.Action` | Vibration event from ESP #3 |
-| context touch, next | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch2.Action` | Manual acknowledge/silence input from ESP #3 |
-| context microphone, next | `tele/safety_context_1/SENSOR` | `JSONPATH:$.ANALOG.A0` | Analog microphone value from ESP #3 |
+| `vibration` | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch1.Action` | Vibration event from ESP #3 |
+| `touch` | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch2.Action` | Manual acknowledge/silence input from ESP #3 |
+| `soundLevel` | `tele/safety_context_1/SENSOR` | `JSONPATH:$.ANALOG.A0` | Analog microphone value from ESP #3 |
 
 The context node should not be treated as an actuator. Its switch inputs are detached from Tasmota's default power-control behavior with:
 
@@ -174,6 +194,20 @@ The reed switch originally produced `TOGGLE` actions. The Tasmota command below 
 SwitchMode2 1
 ```
 
+[things/http.things](things/http.things) contains the HTTP thing:
+
+```text
+Thing http:url:geosphere_warnings
+```
+
+It fetches official GeoSphere Austria warning data:
+
+```text
+https://warnungen.zamg.at/wsapp/api/getWarningsForCoords?lon=16.3738&lat=48.2082&lang=en
+```
+
+The channels extract the warning area, number of active warnings, first warning level, and first warning text.
+
 ## Item Layer
 
 [items/safety_monitor.items](items/safety_monitor.items) defines the openHAB Items:
@@ -185,7 +219,15 @@ SwitchMode2 1
 | `Door` | `Switch` | Reed / Switch2 channel |
 | `Temperature` | `Number` | DS18B20 temperature channel |
 | `Buzzer` | `Switch` | ESP #2 buzzer power channel |
-| `BuzzerLevel` | `Dimmer` | ESP #2 buzzer PWM level channel |
+| `BuzzerLevel` | `Dimmer` | Local openHAB buzzer intensity preset |
+| `BuzzerCommand` | `Dimmer` | ESP #2 buzzer PWM command channel |
+| `Vibration` | `String` | ESP #3 vibration event channel |
+| `Touch` | `String` | ESP #3 touch acknowledgement channel |
+| `SoundLevel` | `Number` | ESP #3 microphone analog channel |
+| `AustriaWarningLocation` | `String` | GeoSphere Austria HTTP warning area |
+| `AustriaWarningCount` | `Number` | GeoSphere Austria active warning count |
+| `AustriaWarningLevel` | `Number` | GeoSphere Austria first warning level |
+| `AustriaWarningText` | `String` | GeoSphere Austria first warning text |
 | `MotionAutomation` | `Switch` | Local openHAB control, not MQTT-linked |
 
 Items are the values that the UI displays and the rules use.
@@ -206,22 +248,30 @@ The current UI shows:
 - reed/door state
 - DS18B20 temperature
 - motion automation enable switch
+- external GeoSphere Austria warning context
 
 ## Rule Layer
 
-[rules/safety_monitor.rules](rules/safety_monitor.rules) currently contains one rule:
+[rules/safety_monitor.rules](rules/safety_monitor.rules) contains the current alarm logic:
 
 ```text
-Motion changed to ON
+door AND (motion OR vibration)
 ```
 
-If `MotionAutomation` is ON, the current rule toggles the relay item:
+If `MotionAutomation` is ON, combined sensor evidence triggers the alarm node:
 
 ```text
-Motion ON -> openHAB rule -> Relay command
+Door + Motion -> openHAB rule -> Relay/Buzzer ON
+Door + Vibration -> openHAB rule -> Relay/Buzzer ON
 ```
 
-The relay and buzzer hardware have moved to ESP #2. The next rule step is to command ESP #2 when ESP #1 or ESP #3 reports a risky event.
+The touch sensor on ESP #3 acknowledges the alarm:
+
+```text
+Touch ON -> openHAB rule -> Relay/Buzzer OFF
+```
+
+The buzzer intensity is handled through a local preset item and a separate MQTT command item so changing the preset does not accidentally act as the only buzzer power control.
 
 ## Helper Script
 
@@ -247,12 +297,12 @@ cd C:\Users\lil\openhab-5.1.4
 [services/addons.cfg](services/addons.cfg) installs the required openHAB add-ons:
 
 ```text
-binding = mqtt
+binding = mqtt,http
 transformation = jsonpath
 ui = basic
 ```
 
-The MQTT binding connects openHAB to Mosquitto. JSONPATH extracts values from Tasmota JSON payloads. Basic UI renders the sitemap.
+The MQTT binding connects openHAB to Mosquitto. The HTTP binding reads the GeoSphere Austria warning feed. JSONPATH extracts values from Tasmota and GeoSphere JSON payloads. Basic UI renders the sitemap.
 
 ## Lab Origin
 

@@ -8,18 +8,18 @@ Maximum score: 20 points.
 
 | Requirement | Current project status | Next action |
 | --- | --- | --- |
-| Configure 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay/buzzer work in Tasmota | Add ESP #2 to openHAB |
-| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay and buzzer actuators | Show both devices during demo |
+| Configure 2x D1 mini devices | Done: ESP #1 monitoring node and ESP #2 alarm node; ESP #3 context node is extra progress | Show nodes during demo |
+| At least one actuator or sensor per D1 mini | Done: ESP #1 has PIR/reed/DS18B20; ESP #2 has relay/buzzer; ESP #3 has vibration/touch/microphone | Show hardware and UI |
 | Network setup shown | Partly documented | Add a simple network plan diagram |
 | Mosquitto broker installed | Done | Show Mosquitto running during demo |
 | Device 1 MQTT access | Done: `safety_monitor_1` | Show in MQTT Explorer |
-| Device 2 MQTT access | Relay and buzzer work in Tasmota; MQTT proof should be captured | Show `safety_alarm_1` in MQTT Explorer |
+| Device 2 MQTT access | Done: `safety_alarm_1` relay, buzzer power, and dimmer topics are visible | Show `safety_alarm_1` in MQTT Explorer |
 | openHAB installed | Done | Start openHAB and show Basic UI |
 | Basic UI sitemap configured | Done: `safety_monitor` | Show Safety Monitor sitemap |
-| Display at least one device value/status in openHAB UI | Done for ESP #1: motion, door, temperature | Add ESP #2 relay/buzzer controls |
-| Manual action on device actuator via openHAB UI | Next target: ESP #2 relay and buzzer | Add manual ESP #2 actuator switches |
-| External webservice via HTTP binding | Missing | Add one HTTP value to UI |
-| Basic rules in openHAB | Started | Keep simple rule; later use ESP #1 event to trigger ESP #2 |
+| Display at least one device value/status in openHAB UI | Done: sensor values, actuator states, and external warning values are shown | Capture UI evidence |
+| Manual action on device actuator via openHAB UI | Done: relay and buzzer can be controlled from Basic UI | Demonstrate in UI |
+| External webservice via HTTP binding | Done: GeoSphere Austria warnings shown in External Safety Context | Capture UI evidence |
+| Basic rules in openHAB | Done: door AND (motion OR vibration) triggers ESP #2; touch acknowledges alarm | Show `events.log` |
 
 ## Recommended Mid-Term Demo Target
 
@@ -29,20 +29,33 @@ The strongest realistic mid-term target is:
 ESP #1 monitoring node
   PIR/reed/temperature
   -> MQTT
-  -> openHAB UI
+  -> openHAB UI/rules
 
 ESP #2 alarm node
   relay and PWM-controlled buzzer
   <- MQTT command
-  <- openHAB manual UI switch
+  <- openHAB manual UI switch/rule
+
+ESP #3 context node
+  vibration/touch/microphone
+  -> MQTT
+  -> openHAB UI/rules
+
+GeoSphere Austria warnings
+  -> HTTP binding
+  -> openHAB External Safety Context
 ```
 
-If time allows, add the rule:
+Implemented rule:
 
 ```text
-ESP #1 motion/reed event
+ESP #1 door/motion event or ESP #3 vibration event
   -> openHAB rule
   -> ESP #2 relay/buzzer ON
+
+ESP #3 touch event
+  -> openHAB rule
+  -> ESP #2 relay/buzzer OFF
 ```
 
 ## Relay Decision
@@ -70,13 +83,13 @@ Capture or show:
 - Manual actuator control from openHAB
 - Basic rule behavior
 - Network plan with D1 nodes, Mosquitto, openHAB, browser, and MQTT Explorer
-- HTTP binding value in openHAB UI, if implemented
+- HTTP binding value in openHAB UI
 
 ## Next Practical Steps
 
-1. Prove ESP #2 MQTT access in MQTT Explorer.
-2. Add ESP #2 manual relay and buzzer control to openHAB.
-3. Remove the old ESP #1 relay config after ESP #2 control works.
-4. Update Basic UI with the ESP #2 actuator state/switch.
-5. Add a simple HTTP-binding value.
-6. Add or adjust a basic rule for the mid-term demo.
+1. Capture the final Basic UI including External Safety Context.
+2. Capture or keep the `events.log` proof for the rule behavior.
+3. Show MQTT Explorer with all three node topics.
+4. Prepare a short verbal walkthrough of MQTT vs HTTP roles.
+5. Mark the evidence screenshots as captured in `EVIDENCE.md`.
+6. Keep remaining final-project work separate: persistence, security notes, LWT status, and TinyML/risk scoring.

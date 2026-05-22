@@ -11,17 +11,17 @@ These items should be treated as required for the final check.
 | Project documentation | Started | Keep README, architecture, wiring guide, project plan, final checklist |
 | Wiring plan of Tasmota devices | Missing | Create wiring diagram for each D1 Mini, e.g. with EasyEDA |
 | Network plan | Partly documented | Add diagram with D1 nodes, Mosquitto, openHAB, laptop/network |
-| Configuration screenshots | Missing | Capture Tasmota, MQTT Explorer, openHAB UI, openHAB files |
+| Configuration screenshots | In progress | Continue adding Tasmota, MQTT Explorer, openHAB UI, and openHAB file screenshots to `EVIDENCE.md` |
 | Security documentation | Missing | Document Wi-Fi, MQTT access, openHAB access, risks, improvements |
 | openHAB config files | Present | Keep all config file based, not MainUI-only |
-| 2 D1 Mini devices with sensors/actuators | In progress | Use ESP #1 monitoring node and ESP #2 alarm node |
+| 2 D1 Mini devices with sensors/actuators | Done, with extra third node | ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
 | File-based openHAB configuration | Present | Continue using `.things`, `.items`, `.rules`, `.sitemap` |
 | Device online/offline status in UI | Missing | Add MQTT LWT status items for each Tasmota node |
-| Manual actuator control in UI | Partly present | Add alarm node buzzer/relay switches |
-| Sensor/actuator values in UI | Partly present | Add motion, door, alarm, risk score values |
-| Rule: device 1 event controls device 2 actuator | In progress | PIR/reed event triggers alarm node |
-| HTTP webservice value in UI | Missing | Add HTTP binding value later |
-| HTTP webservice based rule | Missing | Use webservice value as a risk modifier or alarm condition |
+| Manual actuator control in UI | Done | Relay and buzzer controls are in Basic UI |
+| Sensor/actuator values in UI | Done for mid-term | Final extension: add risk score and device health |
+| Rule: device 1 event controls device 2 actuator | Done for mid-term | Final extension: risk scoring/TinyML |
+| HTTP webservice value in UI | Done | GeoSphere Austria warning context is shown in Basic UI |
+| HTTP webservice based rule | Planned | Use warning count/level as a risk modifier later |
 | Historical values in UI | Missing | Add persistence and display history |
 | Internet access to openHAB UI | Missing | Decide safe access method and document it |
 

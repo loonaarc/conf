@@ -1,0 +1,24 @@
+Thing http:url:geosphere_warnings "GeoSphere Austria Warnings" [
+    // The URL to fetch the warnings for Vienna, Austria. You can change the coordinates to get warnings for a different location.
+    baseURL="https://warnungen.zamg.at/wsapp/api/getWarningsForCoords?lon=16.3738&lat=48.2082&lang=en",
+    refresh=300,
+    timeout=10000,
+    bufferSize=65536
+] {
+    Channels:
+        Type string : location "Warning Location" [
+            stateTransformation="JSONPATH:$.properties.location.properties.name"
+        ]
+
+        Type number : warningCount "Active Warning Count" [
+            stateTransformation="JSONPATH:$.properties.warnings.length()"
+        ]
+
+        Type number : firstWarningLevel "First Warning Level" [
+            stateTransformation="JSONPATH:$.properties.warnings[0].properties.warnstufeid"
+        ]
+
+        Type string : firstWarningText "First Warning Text" [
+            stateTransformation="JSONPATH:$.properties.warnings[0].properties.text"
+        ]
+}

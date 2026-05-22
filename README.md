@@ -5,8 +5,9 @@ This folder contains the openHAB configuration for the distributed edge-based sa
 ## What Is Included
 
 - `things/mqtt.things` defines the MQTT broker and D1 Mini MQTT channels.
+- `things/http.things` defines the GeoSphere Austria HTTP warning feed.
 - `items/safety_monitor.items` defines the openHAB items shown in the UI and used by rules.
-- `rules/safety_monitor.rules` currently toggles the relay when motion is detected and automation is enabled.
+- `rules/safety_monitor.rules` reacts to combined safety events and controls the alarm node.
 - `sitemaps/safety_monitor.sitemap` defines the current Basic UI page.
 - `services/addons.cfg` installs the required openHAB add-ons on startup.
 
@@ -30,13 +31,14 @@ For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENC
 - Java available for openHAB.
 - Mosquitto MQTT broker running on the same machine.
 - Tasmota devices reachable by MQTT.
+- Internet access for the GeoSphere Austria HTTP warning feed.
 - The current project MQTT topics: `safety_monitor_1`, `safety_alarm_1`, and `safety_context_1`.
 - Visual Studio Code with the openHAB extension is useful for editing the configuration files.
 
 The required openHAB add-ons are configured in `services/addons.cfg`:
 
 ```text
-binding = mqtt
+binding = mqtt,http
 transformation = jsonpath
 ui = basic
 ```
@@ -505,9 +507,37 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
 2. Use `Relay` to manually switch the ESP #2 Tasmota relay.
 3. Watch `Motion` to see motion state updates from MQTT.
 4. Use `Buzzer` and `Buzzer level` to test the ESP #2 PWM buzzer.
-5. Enable `Motion automation` if motion should toggle the relay.
+5. Check `External Safety Context` to verify the GeoSphere Austria HTTP warning feed.
+6. Enable `Motion automation` if the rule should react to safety events.
 
-When `Motion automation` is ON and the `Motion` item changes to ON, the rule in `rules/safety_monitor.rules` toggles the relay.
+When `Motion automation` is ON, the rule in `rules/safety_monitor.rules` triggers the alarm node when the door/reed state is active together with motion or vibration. The touch sensor acknowledges the alarm and switches the relay and buzzer off again.
+
+## External Safety Context
+
+The project uses the HTTP binding to read official GeoSphere Austria warnings for Vienna:
+
+```text
+https://warnungen.zamg.at/wsapp/api/getWarningsForCoords?lon=16.3738&lat=48.2082&lang=en
+```
+
+The HTTP thing is defined in:
+
+```text
+things/http.things
+```
+
+The Basic UI shows:
+
+```text
+Warning area
+Active weather warnings
+Warning level
+Warning text
+```
+
+If there are no active warnings, the warning count shows `0` and the warning level/text may show `-`. This is normal and still proves that the HTTP binding is working.
+
+For the project concept, this external safety context can later be used as a risk modifier. For example, vibration during an active storm warning may be treated differently than vibration during normal conditions.
 
 ## Console Checks
 
@@ -553,6 +583,13 @@ If the Basic UI page is missing:
 
 - Confirm `ui = basic` is present in `services/addons.cfg`.
 - Restart openHAB and wait for the add-on installation to finish.
+
+If the external warning values are missing:
+
+- Confirm `binding = mqtt,http` is present in `services/addons.cfg`.
+- Confirm `things/http.things` exists.
+- Check whether the laptop has internet access.
+- Open the GeoSphere URL in a browser and confirm it returns JSON.
 
 If motion does not update:
 

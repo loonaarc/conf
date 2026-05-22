@@ -24,13 +24,13 @@ sitemap safety_monitor label="Safety Monitor"
         Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
 
         // Vibration state from Switch1 on ESP #3.
-        Text item=Vibration label="Vibration [%s]" icon="energy"
+        Text item=Vibration label="Vibration [%s]" icon="smoke"
 
         // Raw microphone analog value from ADC on ESP #3.
         Text item=SoundLevel label="Sound level [%.0f]" icon="microphone"
 
         // Touch state from Switch2 on ESP #3.
-        Text item=Touch label="Touch [%s]" icon="returnpipe"
+        Text item=Touch label="Touch [%s]" icon="input"
     }
 
     // Control frame contains local openHAB controls.
@@ -44,5 +44,13 @@ sitemap safety_monitor label="Safety Monitor"
 
         // Manual relay control; this should click the relay shield.
         Switch item=Relay label="Relay" icon="wallswitch"
+    }
+
+    Frame label="External Safety Context"
+    {
+        Text item=AustriaWarningLocation label="Warning area [%s]" icon="house"
+        Text item=AustriaWarningCount label="Active weather warnings [%.0f]" icon="energy"
+        Text item=AustriaWarningLevel label="Warning level [%.0f]" icon="qualityofservice"
+        Text item=AustriaWarningText label="Warning text [%s]" icon="text"
     }
 }

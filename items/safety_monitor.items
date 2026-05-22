@@ -21,7 +21,6 @@ Switch Door "Door/Reed" { channel="mqtt:topic:safety_monitor_1:door" }
 Number Temperature "Temperature [%.1f C]" { channel="mqtt:topic:safety_monitor_1:temperature" }
 
 // Relay actuator on ESP #2.
-// Linked to the MQTT relay channel, so openHAB can read and command the relay.
 Switch Relay "Relay" { channel="mqtt:topic:safety_alarm_1:relay" }
 
 // Buzzer actuator on ESP #2.
@@ -41,3 +40,13 @@ Number SoundLevel "Sound Level [%.0f]" { channel="mqtt:topic:safety_context_1:so
 // Local openHAB-only switch.
 // Not linked to MQTT; it enables or disables the motion automation rule.
 Switch MotionAutomation "Motion automation"
+
+
+// Items for GeoSphere Austria Warnings from http.things.
+String AustriaWarningLocation "Warning Area [%s]" { channel="http:url:geosphere_warnings:location" }
+
+Number AustriaWarningCount "Active Weather Warnings [%.0f]" { channel="http:url:geosphere_warnings:warningCount" }
+
+Number AustriaWarningLevel "Warning Level [%.0f]" { channel="http:url:geosphere_warnings:firstWarningLevel" }
+
+String AustriaWarningText "Warning Text [%s]" { channel="http:url:geosphere_warnings:firstWarningText" }
