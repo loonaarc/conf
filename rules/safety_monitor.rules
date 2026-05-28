@@ -1,15 +1,8 @@
 /*
-File purpose:
-This file contains openHAB automation rules for the safety-monitoring project.
-
-Current behavior:
-- The alarm only triggers when automation is enabled and the door/reed state is ON
-  together with either PIR motion or a vibration event.
-- Touch on the context node acknowledges/silences the alarm.
-- Buzzer power and buzzer intensity are separated: the slider stores the selected
-  intensity, while BuzzerCommand sends that value to the Tasmota PWM output.
+This file defines the openHAB rules for the safety monitor project.
 */
 
+// Rule to trigger the alarm when both motion and door are detected, but only if motion automation is enabled.
 rule "Door And Motion Trigger Alarm"
 when
     Item Motion changed or
@@ -21,6 +14,7 @@ then
     }
 end
 
+// Rule to trigger the alarm when both vibration and door are detected, but only if motion automation is enabled.
 rule "Door And Vibration Trigger Alarm"
 when
     Item Vibration received update "ON"
@@ -31,7 +25,8 @@ then
     }
 end
 
-rule "Touch Acknowledges Alarm"
+// Rule to disable the alarm when touch is detected.
+rule "Touch Disables Alarm"
 when
     Item Touch received update "ON"
 then
@@ -39,6 +34,7 @@ then
     Buzzer.sendCommand(OFF)
 end
 
+// Rule to control the buzzer power based on the selected intensity level when the buzzer is turned ON.
 rule "Buzzer Power Uses Selected Intensity"
 when
     Item Buzzer received command ON
@@ -54,6 +50,7 @@ then
     BuzzerCommand.sendCommand(level.intValue)
 end
 
+// Rule to update the buzzer intensity if the level is changed while the buzzer is ON.
 rule "Buzzer Intensity Changes While On"
 when
     Item BuzzerLevel changed

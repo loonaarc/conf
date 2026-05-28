@@ -13,10 +13,12 @@ Local distributed IoT chain:
 ```text
 ESP #1 / ESP #3 sensors
   -> Tasmota MQTT
+  -> Wi-Fi router / hotspot
   -> Mosquitto MQTT broker
   -> openHAB MQTT binding
   -> openHAB Items / Basic UI / rules
   -> MQTT commands
+  -> Wi-Fi router / hotspot
   -> ESP #2 relay and buzzer
 ```
 
@@ -33,7 +35,7 @@ Together, these chains prove local distributed sensing/actuation and an external
 
 ## System Components
 
-The network plan can be rendered from [docs/network-plan.puml](docs/network-plan.puml). It shows the laptop/openHAB host, Mosquitto, MQTT Explorer, all three ESP/Tasmota nodes, the browser, and the GeoSphere Austria HTTP feed.
+The network plan can be rendered from [docs/network-plan.puml](docs/network-plan.puml). It shows the Wi-Fi router/hotspot, the laptop/openHAB host, Mosquitto, MQTT Explorer, all three ESP/Tasmota nodes, the browser, and the GeoSphere Austria HTTP feed.
 
 ```text
 +-----------------------------+        +-----------------------------+
@@ -47,7 +49,14 @@ The network plan can be rendered from [docs/network-plan.puml](docs/network-plan
                |                                      |
                +------------------+-------------------+
                                   |
-                                  | MQTT events
+                                  | Wi-Fi MQTT events
+                                  v
+                    +-------------+-------------+
+                    | Wi-Fi Router / Hotspot    |
+                    | local network: 192.168.43.x|
+                    +-------------+-------------+
+                                  |
+                                  | local network
                                   v
                     +-------------+-------------+
                     | Mosquitto MQTT broker     |
@@ -64,7 +73,7 @@ The network plan can be rendered from [docs/network-plan.puml](docs/network-plan
                     | Basic UI sitemap          |
                     +------+------+-------------+
                            |     |
-              user view    |     | MQTT commands
+              user view    |     | MQTT commands over Wi-Fi
               / control    v     v
              +-------------+     +-----------------------------+
              | Browser /   |     | ESP #2 Safety Alarm Node    |

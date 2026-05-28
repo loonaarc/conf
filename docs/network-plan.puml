@@ -16,7 +16,7 @@ node "Laptop / openHAB Host\nIP: 192.168.43.26" as laptop {
   component "Browser\nBasic UI + Tasmota UIs" as browser
 }
 
-node "Wi-Fi / Hotspot\n192.168.43.x" as wifi
+node "Wi-Fi Router / Hotspot\n192.168.43.x" as wifi
 
 node "ESP #1 Safety Monitor\nIP: 192.168.43.223\nMQTT topic: safety_monitor_1" as esp1 {
   component "PIR motion\nD2 / Switch1" as pir

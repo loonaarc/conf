@@ -1,8 +1,15 @@
+/*
+This file defines the openHAB Things configuration for fetching weather warnings from the GeoSphere Austria API.
+*/
+
+// This Thing uses the HTTP binding to fetch weather warning data for Vienna, Austria, from the GeoSphere API. The channels extract specific pieces of information from the JSON response using JSONPATH transformations.
 Thing http:url:geosphere_warnings "GeoSphere Austria Warnings" [
     // The URL to fetch the warnings for Vienna, Austria. You can change the coordinates to get warnings for a different location.
     baseURL="https://warnungen.zamg.at/wsapp/api/getWarningsForCoords?lon=16.3738&lat=48.2082&lang=en",
     refresh=300,
+    // Timeout increased to 10 seconds to allow for slower responses from the API.
     timeout=10000,
+    // Buffer size increased to handle larger JSON responses with multiple warnings.
     bufferSize=65536
 ] {
     Channels:

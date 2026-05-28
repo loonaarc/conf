@@ -1,9 +1,5 @@
 /*
-File purpose:
-This file creates openHAB Items for the safety-monitoring project.
-
-Items are the named values used by the UI and rules.
-The channel links connect each Item to one MQTT channel from things/mqtt.things.
+This file defines the openHAB items for the safety monitor project. It includes items for the PIR motion sensor, reed switch, temperature sensor, relay, buzzer, and additional context sensors like vibration, touch, and sound level. The items are linked to MQTT channels that correspond to the topics published by the Tasmota firmware on the ESP8266 nodes. There is also a local switch for enabling or disabling motion automation rules, and items for GeoSphere Austria weather warnings from an HTTP binding.
 */
 
 
@@ -29,12 +25,16 @@ Switch Buzzer "Buzzer" { channel="mqtt:topic:safety_alarm_1:buzzerPower" }
 // Buzzer intensity level from 0 to 100%.
 Dimmer BuzzerLevel "Buzzer Intensity [%d %%]"
 
+// Buzzer command item to set the buzzer level from rules or UI. This is linked to the buzzerLevel channel which sends commands to Tasmota.
 Dimmer BuzzerCommand "Buzzer Command [%d %%]" { channel="mqtt:topic:safety_alarm_1:buzzerLevel" }
 
+// Vibration sensor state from Switch1 on ESP #3.
 String Vibration "Vibration [%s]" { channel="mqtt:topic:safety_context_1:vibration" }
 
+// Touch sensor state from Switch2 on ESP #3.
 String Touch "Touch [%s]" { channel="mqtt:topic:safety_context_1:touch" }
 
+// Sound level from the analog microphone on ESP #3. This is a numeric value that can be used in rules to trigger actions based on sound thresholds.
 Number SoundLevel "Sound Level [%.0f]" { channel="mqtt:topic:safety_context_1:soundLevel" }
 
 // Local openHAB-only switch.

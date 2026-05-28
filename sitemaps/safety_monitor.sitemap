@@ -9,11 +9,9 @@ It does not define MQTT topics or automation logic.
 // Sitemap ID used in the Basic UI URL: ?sitemap=safety_monitor
 sitemap safety_monitor label="Safety Monitor"
 {
-    // Device frame shows live sensor values and the test relay.
-    Frame label="Device"
+    // Device frame contains sensor readings from the monitoring node.
+    Frame label="Device Status"
     {
-        
-
         // PIR state from Switch1.
         Text item=Motion label="Motion [%s]" icon="motion"
 
@@ -36,7 +34,7 @@ sitemap safety_monitor label="Safety Monitor"
     // Control frame contains local openHAB controls.
     Frame label="Control"
     {
-        // Enables or disables the rule that toggles the relay on motion.
+        // Enables or disables the rule that toggles the alarm based on motion and door state. This is a local switch that is not linked to MQTT.
         Switch item=MotionAutomation label="Motion automation" icon="presence"
 
         Switch item=Buzzer label="Buzzer power" icon="siren"
@@ -46,6 +44,7 @@ sitemap safety_monitor label="Safety Monitor"
         Switch item=Relay label="Relay" icon="wallswitch"
     }
 
+    // External safety context frame contains weather warning information from the GeoSphere Austria API, fetched via the HTTP binding.
     Frame label="External Safety Context"
     {
         Text item=AustriaWarningLocation label="Warning area [%s]" icon="house"
