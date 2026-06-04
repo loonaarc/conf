@@ -18,6 +18,12 @@ Bridge mqtt:broker:mosquitto "MQTT Broker" [
 // This represents ESP #1, the Tasmota monitoring node with topic safety_monitor_1.
 Thing mqtt:topic:safety_monitor_1 "Safety Monitor Node" (mqtt:broker:mosquitto) {
     Channels:
+        // MQTT Last Will and Testament status.
+        // Tasmota publishes Online when connected and the broker publishes Offline if the node disappears.
+        Type string : lwt "Node Status" [
+            stateTopic="tele/safety_monitor_1/LWT"
+        ]
+
         // PIR motion channel.
         Type switch : motion "Motion" [
             // Shared Tasmota result topic for switch events.
@@ -46,6 +52,11 @@ Thing mqtt:topic:safety_monitor_1 "Safety Monitor Node" (mqtt:broker:mosquitto) 
 // This represents ESP #2, the Tasmota alarm node with topic safety_alarm_1, which has both sensor and actuator channels.
 Thing mqtt:topic:safety_alarm_1 "Safety Alarm Node" (mqtt:broker:mosquitto) {
     Channels:
+        // MQTT Last Will and Testament status.
+        Type string : lwt "Node Status" [
+            stateTopic="tele/safety_alarm_1/LWT"
+        ]
+
         // Relay channel.
         Type switch : relay "Relay" [
             // Tasmota publishes relay state here, for example ON or OFF.
@@ -70,6 +81,11 @@ Thing mqtt:topic:safety_alarm_1 "Safety Alarm Node" (mqtt:broker:mosquitto) {
 // This represents ESP #3, the Tasmota context node with topic safety_context_1, which has additional sensors.
 Thing mqtt:topic:safety_context_1 "Safety Context Node" (mqtt:broker:mosquitto) {
     Channels:
+        // MQTT Last Will and Testament status.
+        Type string : lwt "Node Status" [
+            stateTopic="tele/safety_context_1/LWT"
+        ]
+
         // Vibration sensor channel.
         Type string : vibration "Vibration" [
             stateTopic="stat/safety_context_1/RESULT",

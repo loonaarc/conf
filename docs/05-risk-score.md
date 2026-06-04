@@ -70,3 +70,16 @@ sensor update
 ```
 
 The TinyML audio node should only add evidence. The safety system should still be demonstrable without the ESP32 audio node.
+
+## UI Placement
+
+After the sitemap is restructured by physical node, the risk score should get its own small summary frame near the top:
+
+```text
+Safety Summary
+  RiskScore
+  RiskLevel
+  AlarmState
+```
+
+The node frames should remain focused on node-specific status, sensors, and actuators.

@@ -30,7 +30,9 @@ Current order:
 8. Add vibration and sound sensors on ESP #3.
 9. Integrate ESP #3 events into openHAB.
 10. Later, use collected data for a TinyML experiment.
-11. Add ESP32 audio-node debug observability with serial output and optional temporary MQTT feature previews.
+11. Add MQTT LWT status for each existing Tasmota node.
+12. Restructure the openHAB sitemap so each physical node has its own frame.
+13. Add ESP32 audio-node debug observability with serial output and optional temporary MQTT feature previews.
 
 For the mid-term check, prioritize the second D1 Mini before polishing the risk score. The mid-term requirements explicitly ask for two D1 Mini devices with at least one actuator or sensor per device and MQTT access for both devices.
 
@@ -251,7 +253,7 @@ The final IoT Applications check requires more than just a working sensor. The a
 | File-based openHAB config | Keep using `.things`, `.items`, `.rules`, `.sitemap`, `addons.cfg` |
 | Device connection status in UI | Add LWT/availability items for each node |
 | Manual actuator control in UI | Add switches for buzzer/relay alarm node |
-| Sensor/actuator values in UI | Show motion, door, vibration, sound, alarm state, risk score |
+| Sensor/actuator values in UI | Show values grouped by node: monitoring, alarm, context, and later TinyML audio |
 | Rule where device 1 triggers device 2 | Monitoring node events trigger alarm node actuator |
 | Security documentation | Document Wi-Fi, MQTT, openHAB access, and known lab tradeoffs |
 | HTTP webservice value and rule | GeoSphere Austria warning values are shown; later use warning count/level as a risk modifier |
@@ -365,3 +367,37 @@ tele/safety_audio_1/CLASSIFICATION
 ```
 
 with summarized data only.
+
+## UI Layout Direction
+
+The final Basic UI should group values by physical node instead of mixing all sensors into one generic frame.
+
+Recommended sitemap frames:
+
+```text
+Monitoring Node
+  MonitorNodeStatus
+  Motion
+  Door
+  Temperature
+
+Alarm Node
+  AlarmNodeStatus
+  Relay
+  Buzzer
+  BuzzerLevel
+
+Context Node
+  ContextNodeStatus
+  Vibration
+  SoundLevel
+  Touch
+
+External Safety Context
+  AustriaWarningLocation
+  AustriaWarningCount
+  AustriaWarningLevel
+  AustriaWarningText
+```
+
+This makes the distributed edge architecture easier to explain because each frame maps to one physical node.

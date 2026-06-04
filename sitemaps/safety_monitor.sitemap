@@ -9,9 +9,11 @@ It does not define MQTT topics or automation logic.
 // Sitemap ID used in the Basic UI URL: ?sitemap=safety_monitor
 sitemap safety_monitor label="Safety Monitor"
 {
-    // Device frame contains sensor readings from the monitoring node.
-    Frame label="Device Status"
+    // Monitoring node frame contains status and sensor readings from ESP #1.
+    Frame label="Monitoring Node"
     {
+        Text item=MonitorNodeStatus label="Status [%s]" icon="network"
+
         // PIR state from Switch1.
         Text item=Motion label="Motion [%s]" icon="motion"
 
@@ -20,6 +22,24 @@ sitemap safety_monitor label="Safety Monitor"
 
         // DS18B20 temperature from Tasmota SENSOR telemetry.
         Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
+    }
+
+    // Alarm node frame contains status and actuator controls from ESP #2.
+    Frame label="Alarm Node"
+    {
+        Text item=AlarmNodeStatus label="Status [%s]" icon="network"
+
+        Switch item=Buzzer label="Buzzer power" icon="siren"
+        Slider item=BuzzerLevel label="Buzzer intensity" icon="soundvolume"
+
+        // Manual relay control; this should click the relay shield.
+        Switch item=Relay label="Relay" icon="wallswitch"
+    }
+
+    // Context node frame contains status and context sensors from ESP #3.
+    Frame label="Context Node"
+    {
+        Text item=ContextNodeStatus label="Status [%s]" icon="network"
 
         // Vibration state from Switch1 on ESP #3.
         Text item=Vibration label="Vibration [%s]" icon="smoke"
@@ -31,17 +51,11 @@ sitemap safety_monitor label="Safety Monitor"
         Text item=Touch label="Touch [%s]" icon="input"
     }
 
-    // Control frame contains local openHAB controls.
-    Frame label="Control"
+    // Local automation frame contains openHAB-only controls.
+    Frame label="Automation"
     {
         // Enables or disables the rule that toggles the alarm based on motion and door state. This is a local switch that is not linked to MQTT.
         Switch item=MotionAutomation label="Motion automation" icon="presence"
-
-        Switch item=Buzzer label="Buzzer power" icon="siren"
-        Slider item=BuzzerLevel label="Buzzer intensity" icon="soundvolume"
-
-        // Manual relay control; this should click the relay shield.
-        Switch item=Relay label="Relay" icon="wallswitch"
     }
 
     // External safety context frame contains weather warning information from the GeoSphere Austria API, fetched via the HTTP binding.

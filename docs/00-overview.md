@@ -36,7 +36,7 @@ The two parts are intentionally separated. The openHAB system should still work 
 
 | Area | Next work |
 | --- | --- |
-| openHAB final project | Risk score, device LWT status, persistence, security notes, final demo flow |
+| openHAB final project | Per-node UI layout, risk score, persistence, security notes, final demo flow |
 | TinyML Wahlfachprojekt | Notebook, dataset plan, regular TensorFlow model, quantized TFLite model, comparison table |
 | ESP32 integration | INMP441 audio capture, TinyML inference, MQTT payload, debug observability, openHAB channel integration |
 | Documentation | Keep root README short and put detailed documentation under `docs/` |

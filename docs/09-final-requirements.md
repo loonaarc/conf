@@ -16,9 +16,9 @@ These items should be treated as required for the final check.
 | openHAB config files | Present | Keep all config file based, not MainUI-only |
 | 2 D1 Mini devices with sensors/actuators | Done, with extra third node | ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
 | File-based openHAB configuration | Present | Continue using `.things`, `.items`, `.rules`, `.sitemap` |
-| Device online/offline status in UI | Missing | Add MQTT LWT status items for each Tasmota node |
+| Device online/offline status in UI | Done | Capture online/offline screenshots for evidence |
 | Manual actuator control in UI | Done | Relay and buzzer controls are in Basic UI |
-| Sensor/actuator values in UI | Done for mid-term | Final extension: add risk score and device health |
+| Sensor/actuator values in UI | Done for mid-term | Final extension: split sitemap into one frame per node and add risk score |
 | Rule: device 1 event controls device 2 actuator | Done for mid-term | Final extension: risk scoring/TinyML |
 | HTTP webservice value in UI | Done | GeoSphere Austria warning context is shown in Basic UI |
 | HTTP webservice based rule | Planned | Use warning count/level as a risk modifier later |
@@ -26,6 +26,7 @@ These items should be treated as required for the final check.
 | Internet access to openHAB UI | Missing | Decide safe access method and document it |
 | Risk score | Planned | Add `RiskScore`, `RiskLevel`, and a recalculation rule |
 | TinyML extension | Planned | Add ESP32 audio-node MQTT summary and model-comparison evidence |
+| UI organization | Planned | Group status, sensors, and actuators by physical node in the sitemap |
 
 ## Should/Could-Have Direction
 
@@ -74,6 +75,7 @@ Capture these while building, so the final report is easier:
 | Device-to-device rule | Sensor events in openHAB trigger relay/buzzer on alarm node | `events.log` screenshot |
 | External webservice | GeoSphere Austria HTTP warning feed | Basic UI screenshot |
 | Device status | Planned MQTT LWT Items | To capture after implementation |
+| Per-node UI | Planned sitemap frames for monitoring, alarm, and context nodes | To capture after sitemap cleanup |
 | Risk score | Planned openHAB score and level Items | To capture after implementation |
 | Historical values | Planned persistence for risk, sound, temperature, alarm | To capture after implementation |
 | Security documentation | Local lab setup, risks, and improvements | [08-security.md](08-security.md) |

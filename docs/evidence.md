@@ -203,21 +203,34 @@ MQTT Explorer          -> Mosquitto for debugging/evidence
 Browser                -> openHAB Basic UI and Tasmota web UIs
 ```
 
+## 16. openHAB Basic UI: Node Availability Online
+
+![alt text](image.png)
+
+Figure 16 should show that openHAB receives and displays MQTT Last Will and Testament values for all distributed Tasmota nodes.
+
+## 17. openHAB Basic UI: Node Availability Offline Test
+
+![alt text](image-1.png)
+
+Figure 17 should show that the MQTT broker publishes the LWT `Offline` state when a node disappears and openHAB displays the changed availability state.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
 
 ```text
 1. openHAB automation is enabled from the Basic UI
-2. Vibration event is published by ESP #3 / Safety Context 1
-3. Door/reed and PIR motion events are published by ESP #1 / Safety Monitor 1
-4. Mosquitto forwards the MQTT events to openHAB
-5. openHAB evaluates the rule: door AND (motion OR vibration)
-6. openHAB sends MQTT commands to ESP #2 / Safety Alarm 1
-7. ESP #2 switches the relay and buzzer actuator
-8. Touch event from ESP #3 acknowledges the alarm
-9. openHAB sends MQTT OFF commands to ESP #2
-10. openHAB automation is disabled from the Basic UI
+2. Node availability is shown through MQTT LWT status Items
+3. Vibration event is published by ESP #3 / Safety Context 1
+4. Door/reed and PIR motion events are published by ESP #1 / Safety Monitor 1
+5. Mosquitto forwards the MQTT events to openHAB
+6. openHAB evaluates the rule: door AND (motion OR vibration)
+7. openHAB sends MQTT commands to ESP #2 / Safety Alarm 1
+8. ESP #2 switches the relay and buzzer actuator
+9. Touch event from ESP #3 acknowledges the alarm
+10. openHAB sends MQTT OFF commands to ESP #2
+11. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:
