@@ -15,7 +15,7 @@ door state
 -> risk score and risk level
 ```
 
-## Planned Items
+## Items
 
 ```text
 Number RiskScore "Risk Score [%.0f]"
@@ -31,17 +31,17 @@ Number TinyMLSoundConfidence "TinyML Sound Confidence [%.2f]"
 Number TinyMLInferenceMs "TinyML Inference Time [%.0f ms]"
 ```
 
-## Initial Scoring
+## Current Scoring
 
 | Evidence | Score |
 | --- | --- |
 | Door/reed open | +2 |
 | Motion detected | +1 |
-| Vibration detected | +3 |
-| Analog sound above threshold | +2 |
+| Vibration detected | +2 |
+| Analog sound above calibrated threshold `> 100` | +2 |
 | TinyML class `alarm_like` with high confidence | +3 |
 | Active GeoSphere warning | +1 |
-| Multiple events close together | +2 |
+| GeoSphere warning level `>= 3` | +1 |
 
 ## Risk Levels
 
@@ -52,24 +52,30 @@ Number TinyMLInferenceMs "TinyML Inference Time [%.0f ms]"
 | 4-5 | `HIGH` | Activate local alarm |
 | 6+ | `CRITICAL` | Activate alarm and mark escalation placeholder |
 
-## Implementation Notes
+## Current Implementation
 
-Start with the already implemented behavior:
+The first openHAB risk-score version is implemented.
 
-```text
-door AND (motion OR vibration)
-  -> alarm ON
-```
-
-Then replace the direct alarm trigger with:
+Current behavior:
 
 ```text
-sensor update
-  -> recalculate RiskScore and RiskLevel
-  -> if HIGH or CRITICAL, activate relay and buzzer
+sensor/context update
+  -> Recalculate Safety Risk Score and Alarm State rule
+  -> update RiskScore and RiskLevel
+  -> Risk Level Triggers Alarm rule activates relay/buzzer when risk is HIGH or CRITICAL
+  -> Touch Acknowledges Alarm rule silences relay/buzzer and sets AlarmState to ACKNOWLEDGED
 ```
 
-The TinyML audio node should only add evidence. The safety system should still be demonstrable without the ESP32 audio node.
+The previous direct trigger rules:
+
+```text
+door AND motion
+door AND vibration
+```
+
+are currently commented out, so the main alarm path is now based on calculated risk level.
+
+The analog microphone value is kept in the score for now, but it is still a weak telemetry-based sound signal. The future ESP32 TinyML audio node should become the stronger audio event source by publishing classification labels and confidence values.
 
 ## UI Placement
 

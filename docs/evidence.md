@@ -205,15 +205,35 @@ Browser                -> openHAB Basic UI and Tasmota web UIs
 
 ## 16. openHAB Basic UI: Node Availability Online
 
-![alt text](image.png)
+![openHAB node availability online](evidence/16-openhab-node-availability-online.png)
 
 Figure 16 should show that openHAB receives and displays MQTT Last Will and Testament values for all distributed Tasmota nodes.
 
 ## 17. openHAB Basic UI: Node Availability Offline Test
 
-![alt text](image-1.png)
+![openHAB node availability offline test](evidence/17-openhab-node-availability-offline.png)
 
 Figure 17 should show that the MQTT broker publishes the LWT `Offline` state when a node disappears and openHAB displays the changed availability state.
+
+## 18. openHAB Basic UI: Risk Score And Alarm State
+
+![openHAB risk score summary](evidence/18-openhab-risk-score-summary.png)
+
+Figure 18 shows that openHAB calculates and displays a local risk score from distributed sensor context.
+
+## 19. events.log: Risk Level Triggers Alarm
+
+![events log risk level triggers alarm](evidence/19-events-log-risk-level-triggers-alarm.png)
+
+Figure 19 proves that the alarm is now triggered by calculated risk state, not only by one hard-coded sensor pair.
+
+The log shows `RiskLevel` changing to `HIGH`, openHAB sending `ON` commands to `Relay` and `Buzzer`, and `AlarmState` changing to `ALARM_ACTIVE`.
+
+## 20. events.log: Touch Acknowledges Alarm
+
+![events log touch acknowledges alarm](evidence/20-events-log-touch-acknowledges-alarm.png)
+
+Figure 20 shows the touch acknowledgement flow. openHAB sends `OFF` commands to `Relay` and `Buzzer`, `AlarmState` changes to `ACKNOWLEDGED`, and then returns to `ARMED` after the risk/alarm-state rule recalculates.
 
 ## Evidence Chain
 
@@ -225,8 +245,8 @@ The final proof chain for the recorded demo is:
 3. Vibration event is published by ESP #3 / Safety Context 1
 4. Door/reed and PIR motion events are published by ESP #1 / Safety Monitor 1
 5. Mosquitto forwards the MQTT events to openHAB
-6. openHAB evaluates the rule: door AND (motion OR vibration)
-7. openHAB sends MQTT commands to ESP #2 / Safety Alarm 1
+6. openHAB recalculates RiskScore and RiskLevel from distributed sensor evidence
+7. RiskLevel HIGH or CRITICAL triggers MQTT commands to ESP #2 / Safety Alarm 1
 8. ESP #2 switches the relay and buzzer actuator
 9. Touch event from ESP #3 acknowledges the alarm
 10. openHAB sends MQTT OFF commands to ESP #2

@@ -11,6 +11,15 @@ String AlarmNodeStatus "Alarm Node [%s]" { channel="mqtt:topic:safety_alarm_1:lw
 String ContextNodeStatus "Context Node [%s]" { channel="mqtt:topic:safety_context_1:lwt" }
 
 
+// Local risk-state items calculated by openHAB rules.
+// These are not directly linked to MQTT; they summarize the distributed sensor state.
+Number RiskScore "Risk Score [%.0f]"
+
+String RiskLevel "Risk Level [%s]"
+
+String AlarmState "Alarm State [%s]"
+
+
 // PIR motion state from Switch1 on ESP #1.
 // This is updated from stat/safety_monitor_1/RESULT via the motion channel.
 Switch Motion "Motion" { channel="mqtt:topic:safety_monitor_1:motion" }

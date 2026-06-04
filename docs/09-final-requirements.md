@@ -2,31 +2,31 @@
 
 This checklist is based on the IoT Applications final project check requirements. It translates the grading points into concrete tasks for this project.
 
-## Must-Have Direction
+## Requirement Status
 
-These items should be treated as required for the final check.
+The final check is graded with 30 points and uses the MoSCoW categories from the assignment PDF.
 
-| Requirement | Current status | Next action |
-| --- | --- | --- |
-| Project documentation | Started | Keep README, architecture, wiring guide, project plan, final checklist |
-| Wiring plan of Tasmota devices | Missing | Create wiring diagram for each D1 Mini, e.g. with EasyEDA |
-| Network plan | Partly documented | Add diagram with D1 nodes, Mosquitto, openHAB, laptop/network |
-| Configuration screenshots | In progress | Continue adding Tasmota, MQTT Explorer, openHAB UI, and openHAB file screenshots to [evidence.md](evidence.md) |
-| Security documentation | Missing | Document Wi-Fi, MQTT access, openHAB access, risks, improvements |
-| openHAB config files | Present | Keep all config file based, not MainUI-only |
-| 2 D1 Mini devices with sensors/actuators | Done, with extra third node | ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
-| File-based openHAB configuration | Present | Continue using `.things`, `.items`, `.rules`, `.sitemap` |
-| Device online/offline status in UI | Done | Capture online/offline screenshots for evidence |
-| Manual actuator control in UI | Done | Relay and buzzer controls are in Basic UI |
-| Sensor/actuator values in UI | Done for mid-term | Final extension: split sitemap into one frame per node and add risk score |
-| Rule: device 1 event controls device 2 actuator | Done for mid-term | Final extension: risk scoring/TinyML |
-| HTTP webservice value in UI | Done | GeoSphere Austria warning context is shown in Basic UI |
-| HTTP webservice based rule | Planned | Use warning count/level as a risk modifier later |
-| Historical values in UI | Missing | Add persistence and display history |
-| Internet access to openHAB UI | Missing | Decide safe access method and document it |
-| Risk score | Planned | Add `RiskScore`, `RiskLevel`, and a recalculation rule |
-| TinyML extension | Planned | Add ESP32 audio-node MQTT summary and model-comparison evidence |
-| UI organization | Planned | Group status, sensors, and actuators by physical node in the sitemap |
+| Requirement | Category | Points | Current status | Next action |
+| --- | --- | ---: | --- | --- |
+| Project documentation, wiring plan, network plan, configuration screenshots, security documentation, openHAB config files | Must | 4 | In progress | Add wiring diagrams and finish security/config screenshots |
+| Implementation of 2 D1 Mini devices including actuators and sensors | Must | 1 | Done, with extra third node | Keep ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
+| openHAB config via config files, not graphical UI | Must | 2 | Done | Keep `.things`, `.items`, `.rules`, `.sitemap`, `addons.cfg` |
+| Security configuration for devices, MQTT, and openHAB | Must | 3 | Documentation started | Add actual security choices and evidence |
+| Device online/offline status in Sitemap UI | Must | 1 | Done | Evidence captured in [evidence.md](evidence.md) |
+| Manual actuator control via Sitemap UI | Must | 1 | Done | Relay and buzzer controls are in Basic UI |
+| Display actuator/sensor values | Must | 1 | Done | Values are grouped by node |
+| Display webservice values via HTTP binding | Must | 1 | Done | GeoSphere Austria warning context is shown |
+| openHAB rule: device 1 value change triggers device 2 actuator | Must | 1 | Done | Risk level now triggers the alarm node |
+| Webservice-based rule to control device actuator | Must | 1 | Done | Warning count/level are used as risk-score modifiers |
+| Display historical values in openHAB UI | Must | 1 | Missing | Add persistence and show history/chart in UI |
+| Internet access to openHAB UI | Must | 1 | Missing | Decide safe access method and document it |
+| Short demonstration video | Should | 2 | Missing | Record final flow after UI/history is stable |
+| Additional actuators/sensors used | Should | 1 | Done | ESP #3 context node and sound/vibration/touch support this |
+| Geolocation-based map | Should | 1 | Missing | Add if time remains |
+| Persistence implementation, not default rrd4j | Should | 2 | Missing | Recommended: JDBC or InfluxDB persistence |
+| Customization of UI according to use case | Should | 2 | Done/in progress | Per-node sitemap is implemented; final screenshot still needed |
+| Additional MainUI page or HABPanel | Could | 2 | Missing | Optional dashboard if time remains |
+| Extra effort | Could | 2 | In progress | Risk scoring and TinyML extension can support this |
 
 ## Should/Could-Have Direction
 
@@ -74,9 +74,9 @@ Capture these while building, so the final report is easier:
 | MQTT communication | Tasmota topics through Mosquitto and openHAB MQTT binding | MQTT Explorer screenshots |
 | Device-to-device rule | Sensor events in openHAB trigger relay/buzzer on alarm node | `events.log` screenshot |
 | External webservice | GeoSphere Austria HTTP warning feed | Basic UI screenshot |
-| Device status | Planned MQTT LWT Items | To capture after implementation |
-| Per-node UI | Planned sitemap frames for monitoring, alarm, and context nodes | To capture after sitemap cleanup |
-| Risk score | Planned openHAB score and level Items | To capture after implementation |
+| Device status | Implemented MQTT LWT Items for all current Tasmota nodes | [evidence.md](evidence.md) |
+| Per-node UI | Implemented sitemap frames for monitoring, alarm, and context nodes | Capture final UI after layout stabilizes |
+| Risk score | Implemented openHAB RiskScore/RiskLevel/AlarmState Items and rules | Capture Basic UI and events.log evidence |
 | Historical values | Planned persistence for risk, sound, temperature, alarm | To capture after implementation |
 | Security documentation | Local lab setup, risks, and improvements | [08-security.md](08-security.md) |
 | TinyML extension | Optional ESP32 audio classifier sends label/confidence | [06-tinyml-extension.md](06-tinyml-extension.md), [07-model-comparison.md](07-model-comparison.md) |
