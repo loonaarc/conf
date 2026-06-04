@@ -11,7 +11,7 @@ The final check is graded with 30 points and uses the MoSCoW categories from the
 | Project documentation, wiring plan, network plan, configuration screenshots, security documentation, openHAB config files | Must | 4 | In progress | Add wiring diagrams and finish security/config screenshots |
 | Implementation of 2 D1 Mini devices including actuators and sensors | Must | 1 | Done, with extra third node | Keep ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
 | openHAB config via config files, not graphical UI | Must | 2 | Done | Keep `.things`, `.items`, `.rules`, `.sitemap`, `addons.cfg` |
-| Security configuration for devices, MQTT, and openHAB | Must | 3 | Documentation started | Add actual security choices and evidence |
+| Security configuration for devices, MQTT, and openHAB | Must | 3 | Documented | Capture security evidence screenshots |
 | Device online/offline status in Sitemap UI | Must | 1 | Done | Evidence captured in [evidence.md](evidence.md) |
 | Manual actuator control via Sitemap UI | Must | 1 | Done | Relay and buzzer controls are in Basic UI |
 | Display actuator/sensor values | Must | 1 | Done | Values are grouped by node |
@@ -78,7 +78,7 @@ Capture these while building, so the final report is easier:
 | Per-node UI | Implemented sitemap frames for monitoring, alarm, and context nodes | Capture final UI after layout stabilizes |
 | Risk score | Implemented openHAB RiskScore/RiskLevel/AlarmState Items and rules | Capture Basic UI and events.log evidence |
 | Historical values | JDBC/SQLite persistence with Basic UI charts for RiskScore, Temperature, and SoundLevel | Capture history chart evidence |
-| Security documentation | Local lab setup, risks, and improvements | [08-security.md](08-security.md) |
+| Security documentation | Local lab setup, MQTT/openHAB/device security, risks, and improvements | [08-security.md](08-security.md) |
 | TinyML extension | Optional ESP32 audio classifier sends label/confidence | [06-tinyml-extension.md](06-tinyml-extension.md), [07-model-comparison.md](07-model-comparison.md) |
 
 ## First Final-Check Milestone

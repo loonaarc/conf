@@ -247,6 +247,24 @@ Figure 21 shows that persisted historical values are displayed in the openHAB Si
 
 Figure 22 proves that a non-default JDBC/SQLite persistence backend is configured instead of relying only on default `rrd4j`.
 
+## 23. Mosquitto Local Broker Security Configuration
+
+![Mosquitto local broker security configuration](evidence/23-mosquitto-local-broker-config.png)
+
+Figure 23 should document the current local lab MQTT broker setup and its security limitation.
+
+## 24. Tasmota MQTT Configuration
+
+![Tasmota MQTT configuration safety monitor](evidence/24-tasmota-mqtt-config-safety-monitor.png)
+
+Figure 24 shows the Tasmota MQTT configuration for the safety monitor node, including local broker host, port `1883`, and topic `safety_monitor_1`. Password information should not be shared beyond this local project evidence.
+
+## 25. openHAB Local UI Access
+
+![openHAB local UI access](evidence/25-openhab-local-ui-access.png)
+
+Figure 25 should show that the current openHAB UI is used as a local lab interface, not a directly public internet endpoint.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
