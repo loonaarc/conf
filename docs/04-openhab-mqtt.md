@@ -11,19 +11,19 @@ This folder contains the openHAB configuration for the distributed edge-based sa
 - `sitemaps/safety_monitor.sitemap` defines the current Basic UI page.
 - `services/addons.cfg` installs the required openHAB add-ons on startup.
 
-For the system design and data flow, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For the system design and data flow, see [01-architecture.md](01-architecture.md).
 
-For the larger safety-monitoring project plan, see [PROJECT_PLAN.md](PROJECT_PLAN.md).
+For the larger safety-monitoring project plan, see [project-plan.md](project-plan.md).
 
-For breadboard, sensor, and pin wiring notes, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
+For breadboard, sensor, and pin wiring notes, see [03-wiring.md](03-wiring.md).
 
-For the available hardware modules and project-relevant selection, see [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md).
+For the available hardware modules and project-relevant selection, see [02-hardware.md](02-hardware.md).
 
-For final grading requirements and missing deliverables, see [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md).
+For final grading requirements and missing deliverables, see [09-final-requirements.md](09-final-requirements.md).
 
-For the Lab 4 mid-term project check requirements, see [MIDTERM_CHECKLIST.md](MIDTERM_CHECKLIST.md).
+For the Lab 4 mid-term project check requirements, see [archive/midterm-checklist.md](archive/midterm-checklist.md).
 
-For screenshots and photos collected during the build, see [EVIDENCE.md](EVIDENCE.md).
+For screenshots and photos collected during the build, see [evidence.md](evidence.md).
 
 ## Requirements
 
@@ -191,7 +191,7 @@ for /L %i in (2,1,254) do @ping -n 1 -w 10 192.168.43.%i >nul
 
 ## Pinout
 
-For sensor and breadboard wiring details, including the DS18B20 temperature sensor, PIR sensor, and reed switch, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
+For sensor and breadboard wiring details, including the DS18B20 temperature sensor, PIR sensor, and reed switch, see [03-wiring.md](03-wiring.md).
 
 Project wiring convention:
 

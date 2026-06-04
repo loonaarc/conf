@@ -96,7 +96,8 @@ MQTT Explorer may still require selecting the saved broker connection manually.
 | `sitemaps/safety_monitor.sitemap` | Basic UI layout |
 | `services/addons.cfg` | Required openHAB add-ons |
 | `docs/network-plan.puml` | PlantUML network plan source |
-| `EVIDENCE.md` | Screenshots, photos, and proof chain |
+| `docs/evidence.md` | Screenshots, photos, and proof chain |
+| `tinyml/` | Notebook, models, and ESP32 audio-node workspace |
 
 Required add-ons:
 
@@ -108,14 +109,19 @@ ui = basic
 
 ## Evidence And Documentation
 
-- [EVIDENCE.md](EVIDENCE.md): screenshots/photos for wiring, Tasmota, MQTT Explorer, openHAB UI, rule proof, HTTP binding, and network plan.
-- [ARCHITECTURE.md](ARCHITECTURE.md): architecture and data-flow explanation.
-- [MIDTERM_CHECKLIST.md](MIDTERM_CHECKLIST.md): requirement coverage for the mid-term check.
-- [WIRING_GUIDE.md](WIRING_GUIDE.md): wiring and pinout notes.
-- [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md): available modules and chosen hardware.
-- [PROJECT_PLAN.md](PROJECT_PLAN.md): project direction toward final check and TinyML/risk scoring.
-- [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md): remaining work for the final project.
-- [SETUP_NOTES.md](SETUP_NOTES.md): detailed setup, flashing, MQTT, and troubleshooting notes.
+- [docs/00-overview.md](docs/00-overview.md): project overview and current plan.
+- [docs/01-architecture.md](docs/01-architecture.md): architecture and data-flow explanation.
+- [docs/02-hardware.md](docs/02-hardware.md): available modules and chosen hardware.
+- [docs/03-wiring.md](docs/03-wiring.md): wiring and pinout notes.
+- [docs/04-openhab-mqtt.md](docs/04-openhab-mqtt.md): setup, flashing, MQTT, and troubleshooting notes.
+- [docs/05-risk-score.md](docs/05-risk-score.md): planned risk-score logic.
+- [docs/06-tinyml-extension.md](docs/06-tinyml-extension.md): ESP32 + INMP441 TinyML extension.
+- [docs/07-model-comparison.md](docs/07-model-comparison.md): regular TensorFlow vs TinyML comparison plan.
+- [docs/08-security.md](docs/08-security.md): security notes and limitations.
+- [docs/09-final-requirements.md](docs/09-final-requirements.md): final project requirements mapping.
+- [docs/10-demo-flow.md](docs/10-demo-flow.md): final demo/video flow.
+- [docs/evidence.md](docs/evidence.md): screenshots/photos for wiring, Tasmota, MQTT Explorer, openHAB UI, rule proof, HTTP binding, and network plan.
+- [docs/archive/midterm-checklist.md](docs/archive/midterm-checklist.md): archived mid-term requirement coverage.
 
 ## Current Limitations And Final Direction
 

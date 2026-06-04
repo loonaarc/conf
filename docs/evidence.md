@@ -6,13 +6,13 @@ Tip: after pasting an image, keep the short caption below it. The captions can b
 
 ## 1. Monitoring Node Wiring
 
-![Monitoring node current wiring](docs/evidence/01-monitor-node-wiring-current.png)
+![Monitoring node current wiring](evidence/01-monitor-node-wiring-current.png)
 
 Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, and shared 3.3V/GND breadboard rails.
 
 ## 2. Monitoring Node Tasmota Module Configuration
 
-![Monitoring node current Tasmota module configuration](docs/evidence/02-monitor-node-tasmota-current.png)
+![Monitoring node current Tasmota module configuration](evidence/02-monitor-node-tasmota-current.png)
 Figure 2 shows the Tasmota GPIO configuration for ESP #1:
 
 ```text
@@ -23,13 +23,13 @@ D6 / GPIO12 -> Switch2, reed switch
 
 ## 3. Tasmota Console: PIR And Reed Events
 
-![Tasmota console with PIR and reed events](docs/evidence/03-tasmota-console-switch-events.png)
+![Tasmota console with PIR and reed events](evidence/03-tasmota-console-switch-events.png)
 
 Figure 3 shows the Tasmota console publishing `Switch1` events from the PIR sensor and `Switch2` events from the reed switch.
 
 ## 4. MQTT Explorer: Switch Events
 
-![MQTT Explorer switch result topic](docs/evidence/04-mqtt-explorer-switch-result.png)
+![MQTT Explorer switch result topic](evidence/04-mqtt-explorer-switch-result.png)
 
 Figure 4 shows MQTT Explorer receiving switch events from the monitoring node under:
 
@@ -41,7 +41,7 @@ This proves that the sensor node publishes PIR and reed events to the MQTT broke
 
 ## 5. MQTT Explorer: Temperature Sensor
 
-![MQTT Explorer temperature sensor telemetry](docs/evidence/05-mqtt-explorer-temperature-sensor.png)
+![MQTT Explorer temperature sensor telemetry](evidence/05-mqtt-explorer-temperature-sensor.png)
 
 Figure 5 shows MQTT Explorer receiving DS18B20 temperature telemetry under:
 
@@ -53,13 +53,13 @@ This proves that the monitoring node also publishes periodic sensor telemetry.
 
 ## 6. Alarm Node Wiring
 
-![Alarm node wiring](docs/evidence/06-alarm-node-wiring.png)
+![Alarm node wiring](evidence/06-alarm-node-wiring.png)
 
 Figure 6 shows ESP #2, the alarm node, connected to the relay and PWM buzzer actuator.
 
 ## 7. Alarm Node Tasmota Module Configuration
 
-![Alarm node Tasmota module configuration](docs/evidence/07-alarm-node-tasmota-module.png)
+![Alarm node Tasmota module configuration](evidence/07-alarm-node-tasmota-module.png)
 
 Figure 7 shows the Tasmota GPIO configuration for ESP #2:
 
@@ -71,13 +71,13 @@ Topic       -> safety_alarm_1
 
 ## 8. Safety Context Node Wiring
 
-![Safety context node wiring](docs/evidence/08-context-node-wiring.png)
+![Safety context node wiring](evidence/08-context-node-wiring.png)
 
 Figure 8 shows ESP #3, the safety context node, connected to the vibration sensor, microphone module, and touch sensor.
 
 ## 9. Safety Context Node Tasmota Module Configuration
 
-![Safety context node current Tasmota module configuration](docs/evidence/09-context-node-tasmota-current.png)
+![Safety context node current Tasmota module configuration](evidence/09-context-node-tasmota-current.png)
 Figure 9 shows the Tasmota GPIO configuration for ESP #3:
 
 ```text
@@ -90,7 +90,7 @@ Topic      -> safety_context_1
 
 ## 10. MQTT Explorer: Context Sensor Events And Telemetry
 
-![Safety context node telemetry](docs/evidence/10-context-node-telemetry-current.png)
+![Safety context node telemetry](evidence/10-context-node-telemetry-current.png)
 
 Figure 10 shows MQTT Explorer receiving context-node sensor events and analog microphone telemetry under:
 
@@ -114,7 +114,7 @@ This proves the context node is online, the vibration and touch inputs publish c
 
 ## 11. openHAB Basic UI: Current Safety-Monitoring View
 
-![openHAB Basic UI current safety monitoring view](docs/evidence/11-openhab-basic-ui-current-view.png)
+![openHAB Basic UI current safety monitoring view](evidence/11-openhab-basic-ui-current-view.png)
 
 Figure 11 shows the current openHAB Basic UI with all three distributed nodes integrated:
 
@@ -126,7 +126,7 @@ ESP #3 -> vibration, sound level, touch acknowledgement
 
 ## 12. Combined Sensor Events Trigger The Alarm Node
 
-![openHAB events log distributed automation proof](docs/evidence/12-openhab-events-log-distributed-automation.png)
+![openHAB events log distributed automation proof](evidence/12-openhab-events-log-distributed-automation.png)
 
 Figure 12 shows the distributed automation in `events.log`:
 
@@ -145,7 +145,7 @@ This proves the complete path from distributed sensor events through openHAB rul
 
 ## 13. MQTT Explorer: Runtime Topics For All Nodes
 
-![MQTT Explorer runtime topics for all safety monitor nodes](docs/evidence/13-mqtt-explorer-runtime-topics.png)
+![MQTT Explorer runtime topics for all safety monitor nodes](evidence/13-mqtt-explorer-runtime-topics.png)
 
 Figure 13 shows live MQTT topics for all three distributed nodes:
 
@@ -163,7 +163,7 @@ This proves that Mosquitto is the communication layer between the distributed Ta
 
 ## 14. HTTP Binding: External Safety Context
 
-![openHAB GeoSphere Austria external safety context](docs/evidence/14-openhab-geosphere-external-safety-context.png)
+![openHAB GeoSphere Austria external safety context](evidence/14-openhab-geosphere-external-safety-context.png)
 
 Figure 14 shows openHAB reading official GeoSphere Austria warning data through the HTTP binding.
 
@@ -184,7 +184,7 @@ HTTP -> external official safety context
 
 ## 15. Network Plan
 
-![Network plan for distributed safety monitoring](docs/evidence/15-network-plan.png)
+![Network plan for distributed safety monitoring](evidence/15-network-plan.png)
 
 The network plan is documented as PlantUML in:
 

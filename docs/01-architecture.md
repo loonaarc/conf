@@ -1,8 +1,8 @@
 # Architecture
 
-This document describes the current architecture of the distributed edge-based safety monitoring project. For setup and startup commands, see [README.md](README.md). For wiring details, see [WIRING_GUIDE.md](WIRING_GUIDE.md).
+This document describes the current architecture of the distributed edge-based safety monitoring project. For setup and startup commands, see [README.md](../README.md). For wiring details, see [03-wiring.md](03-wiring.md).
 
-The PlantUML network plan is available in [docs/network-plan.puml](docs/network-plan.puml).
+The PlantUML network plan is available in [network-plan.puml](network-plan.puml).
 
 ## Current Goal
 
@@ -35,7 +35,7 @@ Together, these chains prove local distributed sensing/actuation and an external
 
 ## System Components
 
-The network plan can be rendered from [docs/network-plan.puml](docs/network-plan.puml). It shows the Wi-Fi router/hotspot, the laptop/openHAB host, Mosquitto, MQTT Explorer, all three ESP/Tasmota nodes, the browser, and the GeoSphere Austria HTTP feed.
+The network plan can be rendered from [network-plan.puml](network-plan.puml). It shows the Wi-Fi router/hotspot, the laptop/openHAB host, Mosquitto, MQTT Explorer, all three ESP/Tasmota nodes, the browser, and the GeoSphere Austria HTTP feed.
 
 ```text
 +-----------------------------+        +-----------------------------+
@@ -162,7 +162,7 @@ Meaning:
 
 ## Thing Layer
 
-[things/mqtt.things](things/mqtt.things) contains:
+[things/mqtt.things](../things/mqtt.things) contains:
 
 ```text
 Bridge mqtt:broker:mosquitto
@@ -207,7 +207,7 @@ The reed switch originally produced `TOGGLE` actions. The Tasmota command below 
 SwitchMode2 1
 ```
 
-[things/http.things](things/http.things) contains the HTTP thing:
+[things/http.things](../things/http.things) contains the HTTP thing:
 
 ```text
 Thing http:url:geosphere_warnings
@@ -223,7 +223,7 @@ The channels extract the warning area, number of active warnings, first warning 
 
 ## Item Layer
 
-[items/safety_monitor.items](items/safety_monitor.items) defines the openHAB Items:
+[items/safety_monitor.items](../items/safety_monitor.items) defines the openHAB Items:
 
 | Item | Type | Source |
 | --- | --- | --- |
@@ -247,7 +247,7 @@ Items are the values that the UI displays and the rules use.
 
 ## UI Layer
 
-[sitemaps/safety_monitor.sitemap](sitemaps/safety_monitor.sitemap) defines the Basic UI page:
+[sitemaps/safety_monitor.sitemap](../sitemaps/safety_monitor.sitemap) defines the Basic UI page:
 
 ```text
 http://localhost:8080/basicui/app?sitemap=safety_monitor
@@ -265,7 +265,7 @@ The current UI shows:
 
 ## Rule Layer
 
-[rules/safety_monitor.rules](rules/safety_monitor.rules) contains the current alarm logic:
+[rules/safety_monitor.rules](../rules/safety_monitor.rules) contains the current alarm logic:
 
 ```text
 door AND (motion OR vibration)
@@ -288,7 +288,7 @@ The buzzer intensity is handled through a local preset item and a separate MQTT 
 
 ## Helper Script
 
-[scripts/start_safety_monitor.ps1](scripts/start_safety_monitor.ps1) opens the local demo tools:
+[scripts/start_safety_monitor.ps1](../scripts/start_safety_monitor.ps1) opens the local demo tools:
 
 - Tasmota web UI for ESP #1 Safety Monitor
 - Tasmota web UI for ESP #2 Safety Alarm
@@ -307,7 +307,7 @@ cd C:\Users\lil\openhab-5.1.4
 
 ## Add-ons
 
-[services/addons.cfg](services/addons.cfg) installs the required openHAB add-ons:
+[services/addons.cfg](../services/addons.cfg) installs the required openHAB add-ons:
 
 ```text
 binding = mqtt,http

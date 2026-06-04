@@ -11,7 +11,7 @@ These items should be treated as required for the final check.
 | Project documentation | Started | Keep README, architecture, wiring guide, project plan, final checklist |
 | Wiring plan of Tasmota devices | Missing | Create wiring diagram for each D1 Mini, e.g. with EasyEDA |
 | Network plan | Partly documented | Add diagram with D1 nodes, Mosquitto, openHAB, laptop/network |
-| Configuration screenshots | In progress | Continue adding Tasmota, MQTT Explorer, openHAB UI, and openHAB file screenshots to `EVIDENCE.md` |
+| Configuration screenshots | In progress | Continue adding Tasmota, MQTT Explorer, openHAB UI, and openHAB file screenshots to [evidence.md](evidence.md) |
 | Security documentation | Missing | Document Wi-Fi, MQTT access, openHAB access, risks, improvements |
 | openHAB config files | Present | Keep all config file based, not MainUI-only |
 | 2 D1 Mini devices with sensors/actuators | Done, with extra third node | ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
@@ -24,6 +24,8 @@ These items should be treated as required for the final check.
 | HTTP webservice based rule | Planned | Use warning count/level as a risk modifier later |
 | Historical values in UI | Missing | Add persistence and display history |
 | Internet access to openHAB UI | Missing | Decide safe access method and document it |
+| Risk score | Planned | Add `RiskScore`, `RiskLevel`, and a recalculation rule |
+| TinyML extension | Planned | Add ESP32 audio-node MQTT summary and model-comparison evidence |
 
 ## Should/Could-Have Direction
 
@@ -60,6 +62,22 @@ Capture these while building, so the final report is easier:
 - wiring diagram for each node
 - short explanation of security choices and limitations
 - short explanation of risk score logic
+- notebook screenshots or plots for the regular-vs-TinyML model comparison
+- MQTT payload screenshot for the optional ESP32 audio node
+
+## Requirement Mapping
+
+| Requirement area | Project implementation | Evidence location |
+| --- | --- | --- |
+| Distributed devices | ESP #1 monitoring, ESP #2 alarm, ESP #3 context | [evidence.md](evidence.md) |
+| MQTT communication | Tasmota topics through Mosquitto and openHAB MQTT binding | MQTT Explorer screenshots |
+| Device-to-device rule | Sensor events in openHAB trigger relay/buzzer on alarm node | `events.log` screenshot |
+| External webservice | GeoSphere Austria HTTP warning feed | Basic UI screenshot |
+| Device status | Planned MQTT LWT Items | To capture after implementation |
+| Risk score | Planned openHAB score and level Items | To capture after implementation |
+| Historical values | Planned persistence for risk, sound, temperature, alarm | To capture after implementation |
+| Security documentation | Local lab setup, risks, and improvements | [08-security.md](08-security.md) |
+| TinyML extension | Optional ESP32 audio classifier sends label/confidence | [06-tinyml-extension.md](06-tinyml-extension.md), [07-model-comparison.md](07-model-comparison.md) |
 
 ## First Final-Check Milestone
 

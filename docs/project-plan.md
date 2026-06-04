@@ -30,12 +30,13 @@ Current order:
 8. Add vibration and sound sensors on ESP #3.
 9. Integrate ESP #3 events into openHAB.
 10. Later, use collected data for a TinyML experiment.
+11. Add ESP32 audio-node debug observability with serial output and optional temporary MQTT feature previews.
 
 For the mid-term check, prioritize the second D1 Mini before polishing the risk score. The mid-term requirements explicitly ask for two D1 Mini devices with at least one actuator or sensor per device and MQTT access for both devices.
 
 ## Device Roles
 
-Available modules and hardware priorities are documented in [HARDWARE_INVENTORY.md](HARDWARE_INVENTORY.md).
+Available modules and hardware priorities are documented in [02-hardware.md](02-hardware.md).
 
 | ESP | Role | Components | Purpose |
 | --- | --- | --- | --- |
@@ -333,3 +334,34 @@ Compare:
 - accuracy
 
 TinyML should become an enhancement to the event detection layer, not a replacement for the MQTT/openHAB infrastructure.
+
+## TinyML Debug Observability
+
+The ESP32 audio node should have two operating views:
+
+```text
+normal operation:
+ESP32 publishes label/confidence/inference time to openHAB
+
+development/debug:
+ESP32 exposes raw sample previews or feature values through serial output
+and optionally through temporary MQTT debug topics
+```
+
+This is similar in purpose to using the Tasmota console and MQTT Explorer for the D1 Mini nodes. The difference is that the ESP32 audio node will use custom firmware, so the debug interface must be implemented explicitly.
+
+Planned debug outputs:
+
+| Output | Purpose |
+| --- | --- |
+| Serial monitor | Raw sample preview, RMS/peak, feature values, predicted class |
+| `tele/safety_audio_1/FEATURES` | Temporary feature/debug MQTT payload |
+| `tele/safety_audio_1/AUDIO_DEBUG` | Optional short sample preview, not continuous raw audio |
+
+The normal deployed data path should still use:
+
+```text
+tele/safety_audio_1/CLASSIFICATION
+```
+
+with summarized data only.
