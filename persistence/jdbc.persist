@@ -1,0 +1,20 @@
+/* 
+ * Persistence configuration for the safety monitoring system.
+ * This file defines the persistence strategies for various items in the system.
+ */
+
+// Define persistence strategies for items.
+Strategies {
+    everyMinute : "0 * * * * ?"
+}
+
+// Define which items to persist and with which strategy.
+Items {
+    RiskScore, Temperature, SoundLevel : strategy = everyChange, everyMinute, restoreOnStartup
+
+    RiskLevel, AlarmState : strategy = everyChange, restoreOnStartup
+
+    Relay, Buzzer : strategy = everyChange, restoreOnStartup
+
+    MonitorNodeStatus, AlarmNodeStatus, ContextNodeStatus : strategy = everyChange, restoreOnStartup
+}

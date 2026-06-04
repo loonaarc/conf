@@ -18,12 +18,12 @@ The final check is graded with 30 points and uses the MoSCoW categories from the
 | Display webservice values via HTTP binding | Must | 1 | Done | GeoSphere Austria warning context is shown |
 | openHAB rule: device 1 value change triggers device 2 actuator | Must | 1 | Done | Risk level now triggers the alarm node |
 | Webservice-based rule to control device actuator | Must | 1 | Done | Warning count/level are used as risk-score modifiers |
-| Display historical values in openHAB UI | Must | 1 | Missing | Add persistence and show history/chart in UI |
+| Display historical values in openHAB UI | Must | 1 | Done | Capture history chart evidence |
 | Internet access to openHAB UI | Must | 1 | Missing | Decide safe access method and document it |
 | Short demonstration video | Should | 2 | Missing | Record final flow after UI/history is stable |
 | Additional actuators/sensors used | Should | 1 | Done | ESP #3 context node and sound/vibration/touch support this |
 | Geolocation-based map | Should | 1 | Missing | Add if time remains |
-| Persistence implementation, not default rrd4j | Should | 2 | Missing | Recommended: JDBC or InfluxDB persistence |
+| Persistence implementation, not default rrd4j | Should | 2 | Done | Capture JDBC/SQLite proof |
 | Customization of UI according to use case | Should | 2 | Done/in progress | Per-node sitemap is implemented; final screenshot still needed |
 | Additional MainUI page or HABPanel | Could | 2 | Missing | Optional dashboard if time remains |
 | Extra effort | Could | 2 | In progress | Risk scoring and TinyML extension can support this |
@@ -77,7 +77,7 @@ Capture these while building, so the final report is easier:
 | Device status | Implemented MQTT LWT Items for all current Tasmota nodes | [evidence.md](evidence.md) |
 | Per-node UI | Implemented sitemap frames for monitoring, alarm, and context nodes | Capture final UI after layout stabilizes |
 | Risk score | Implemented openHAB RiskScore/RiskLevel/AlarmState Items and rules | Capture Basic UI and events.log evidence |
-| Historical values | Planned persistence for risk, sound, temperature, alarm | To capture after implementation |
+| Historical values | JDBC/SQLite persistence with Basic UI charts for RiskScore, Temperature, and SoundLevel | Capture history chart evidence |
 | Security documentation | Local lab setup, risks, and improvements | [08-security.md](08-security.md) |
 | TinyML extension | Optional ESP32 audio classifier sends label/confidence | [06-tinyml-extension.md](06-tinyml-extension.md), [07-model-comparison.md](07-model-comparison.md) |
 

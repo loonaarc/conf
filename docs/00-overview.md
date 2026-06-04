@@ -36,7 +36,7 @@ The two parts are intentionally separated. The openHAB system should still work 
 
 | Area | Next work |
 | --- | --- |
-| openHAB final project | Per-node UI layout, risk score, persistence, security notes, final demo flow |
+| openHAB final project | Per-node UI layout, risk score, JDBC/SQLite persistence, security notes, final demo flow |
 | TinyML Wahlfachprojekt | Notebook, dataset plan, regular TensorFlow model, quantized TFLite model, comparison table |
 | ESP32 integration | INMP441 audio capture, TinyML inference, MQTT payload, debug observability, openHAB channel integration |
 | Documentation | Keep root README short and put detailed documentation under `docs/` |
@@ -55,5 +55,6 @@ The two parts are intentionally separated. The openHAB system should still work 
 | [08-security.md](08-security.md) | Security notes |
 | [09-final-requirements.md](09-final-requirements.md) | Final project requirement mapping |
 | [10-demo-flow.md](10-demo-flow.md) | Demo and video flow |
+| [11-persistence-history.md](11-persistence-history.md) | JDBC/SQLite persistence and history charts |
 | [evidence.md](evidence.md) | Screenshots, photos, and proof chain |
 | [project-plan.md](project-plan.md) | Detailed project plan |

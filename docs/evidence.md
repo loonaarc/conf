@@ -235,6 +235,18 @@ The log shows `RiskLevel` changing to `HIGH`, openHAB sending `ON` commands to `
 
 Figure 20 shows the touch acknowledgement flow. openHAB sends `OFF` commands to `Relay` and `Buzzer`, `AlarmState` changes to `ACKNOWLEDGED`, and then returns to `ARMED` after the risk/alarm-state rule recalculates.
 
+## 21. openHAB Basic UI: JDBC History Charts
+
+![openHAB JDBC history charts](evidence/21-openhab-history-charts-jdbc.png)
+
+Figure 21 shows that persisted historical values are displayed in the openHAB Sitemap UI.
+
+## 22. JDBC SQLite Persistence Proof
+
+![JDBC SQLite persistence proof](evidence/22-jdbc-sqlite-persistence-proof.png)
+
+Figure 22 proves that a non-default JDBC/SQLite persistence backend is configured instead of relying only on default `rrd4j`.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
@@ -250,7 +262,9 @@ The final proof chain for the recorded demo is:
 8. ESP #2 switches the relay and buzzer actuator
 9. Touch event from ESP #3 acknowledges the alarm
 10. openHAB sends MQTT OFF commands to ESP #2
-11. openHAB automation is disabled from the Basic UI
+11. JDBC/SQLite persistence stores selected Item history
+12. Basic UI history charts display RiskScore, Temperature, and SoundLevel
+13. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:

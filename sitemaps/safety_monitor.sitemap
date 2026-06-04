@@ -74,4 +74,12 @@ sitemap safety_monitor label="Safety Monitor"
         Text item=AustriaWarningLevel label="Warning level [%.0f]" icon="qualityofservice"
         Text item=AustriaWarningText label="Warning text [%s]" icon="text"
     }
+
+    // History frame shows persisted numeric values from JDBC persistence.
+    Frame label="History"
+    {
+        Chart item=RiskScore label="Risk score history" period=h refresh=10000 service="jdbc"
+        Chart item=Temperature label="Temperature history" period=h refresh=10000 service="jdbc"
+        Chart item=SoundLevel label="Sound level history" period=h refresh=10000 service="jdbc"
+    }
 }
