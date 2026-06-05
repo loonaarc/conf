@@ -529,9 +529,9 @@ https://myopenhab.org/basicui/app?sitemap=safety_monitor
 3. Watch `Motion` to see motion state updates from MQTT.
 4. Use `Buzzer` and `Buzzer level` to test the ESP #2 PWM buzzer.
 5. Check `External Safety Context` to verify the GeoSphere Austria HTTP warning feed.
-6. Enable `Motion automation` if the rule should react to safety events.
+6. Enable `Alarm automation` if the rule should react to safety events.
 
-When `Motion automation` is ON, the rule in `rules/safety_monitor.rules` triggers the alarm node when the door/reed state is active together with motion or vibration. The touch sensor acknowledges the alarm and switches the relay and buzzer off again.
+When `Alarm automation` is ON, the rule in `rules/safety_monitor.rules` triggers the alarm node when the calculated risk level becomes high enough. The touch sensor acknowledges the alarm and switches the relay and buzzer off again.
 
 ## External Safety Context
 

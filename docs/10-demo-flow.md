@@ -35,7 +35,7 @@ Also keep MQTT Explorer and `events.log` visible for proof.
 2. Show MQTT Explorer with live topics for `safety_monitor_1`, `safety_alarm_1`, and `safety_context_1`.
 3. Show the openHAB Basic UI with node availability from MQTT LWT.
 4. Optional: unplug one node briefly and show the UI changing to `Offline`.
-5. Enable `Motion automation`.
+5. Enable `Alarm automation`.
 6. Trigger door/reed and motion on ESP #1.
 7. Show that openHAB receives the Item updates.
 8. Show the relay and buzzer on ESP #2 activating.

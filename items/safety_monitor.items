@@ -1,5 +1,5 @@
 /*
-This file defines the openHAB items for the safety monitor project. It includes items for the PIR motion sensor, reed switch, temperature sensor, relay, buzzer, and additional context sensors like vibration, touch, and sound level. The items are linked to MQTT channels that correspond to the topics published by the Tasmota firmware on the ESP8266 nodes. There is also a local switch for enabling or disabling motion automation rules, and items for GeoSphere Austria weather warnings from an HTTP binding.
+This file defines the openHAB items for the safety monitor project. It includes items for the PIR motion sensor, reed switch, temperature sensor, relay, buzzer, and additional context sensors like vibration, touch, and sound level. The items are linked to MQTT channels that correspond to the topics published by the Tasmota firmware on the ESP8266 nodes. There is also a local switch for enabling or disabling alarm automation rules, and items for GeoSphere Austria weather warnings from an HTTP binding.
 */
 
 // MQTT Last Will and Testament status for each node.
@@ -54,8 +54,8 @@ String Touch "Touch [%s]" { channel="mqtt:topic:safety_alarm_1:touch" }
 Number SoundLevel "Sound Level [%.0f]" { channel="mqtt:topic:safety_context_1:soundLevel" }
 
 // Local openHAB-only switch.
-// Not linked to MQTT; it enables or disables the motion automation rule.
-Switch MotionAutomation "Motion automation"
+// Not linked to MQTT; it enables or disables the risk-based alarm automation.
+Switch AlarmAutomation "Alarm automation"
 
 
 // Items for GeoSphere Austria Warnings from http.things.

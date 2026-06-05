@@ -12,9 +12,15 @@ sitemap safety_monitor label="Safety Monitor"
     // Safety summary frame contains local openHAB-calculated risk state.
     Frame label="Safety Summary"
     {
-        Text item=RiskScore label="Risk score [%.0f]" icon="shield"
-        Text item=RiskLevel label="Risk level [%s]" icon="shield"
-        Text item=AlarmState label="Alarm state [%s]" icon="siren"
+        Text item=RiskScore label="Risk score [%.0f]" icon="chart"
+        Text item=RiskLevel label="Risk level [%s]" icon="qualityofservice"
+        Text item=AlarmState label="Alarm state [%s]" icon="siren-off" visibility=[AlarmState=="IDLE"]
+        Text item=AlarmState label="Alarm state [%s]" icon="siren-off" visibility=[AlarmState=="ACKNOWLEDGED"]
+        Text item=AlarmState label="Alarm state [%s]" icon="status" visibility=[AlarmState=="ARMED"]
+        Text item=AlarmState label="Alarm state [%s]" icon="siren" visibility=[AlarmState=="ALARM_ACTIVE"]
+
+        // Enables or disables the risk-based alarm rules. This is a local switch that is not linked to MQTT.
+        Switch item=AlarmAutomation label="Alarm automation" icon="switch"
     }
 
     // Monitoring node frame contains status and sensor readings from ESP #1.
@@ -59,13 +65,6 @@ sitemap safety_monitor label="Safety Monitor"
         // DS18B20 temperature from the context-node telemetry.
         Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
 
-    }
-
-    // Local automation frame contains openHAB-only controls.
-    Frame label="Automation"
-    {
-        // Enables or disables the rule that toggles the alarm based on motion and door state. This is a local switch that is not linked to MQTT.
-        Switch item=MotionAutomation label="Motion automation" icon="switch"
     }
 
     // External safety context frame contains weather warning information from the GeoSphere Austria API, fetched via the HTTP binding.

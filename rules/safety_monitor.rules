@@ -12,7 +12,7 @@ when
     Item SoundLevel changed or
     Item AustriaWarningCount changed or
     Item AustriaWarningLevel changed or
-    Item MotionAutomation changed or
+    Item AlarmAutomation changed or
     Item Relay changed or
     Item Buzzer changed
 then
@@ -65,7 +65,7 @@ then
 
     if (Relay.state == ON || Buzzer.state == ON) {
         AlarmState.postUpdate("ALARM_ACTIVE")
-    } else if (MotionAutomation.state == ON) {
+    } else if (AlarmAutomation.state == ON) {
         AlarmState.postUpdate("ARMED")
     } else {
         AlarmState.postUpdate("IDLE")
@@ -77,34 +77,12 @@ rule "Risk Level Triggers Alarm"
 when
     Item RiskLevel changed
 then
-    if (MotionAutomation.state == ON && (RiskLevel.state == "HIGH" || RiskLevel.state == "CRITICAL")) {
+    if (AlarmAutomation.state == ON && (RiskLevel.state == "HIGH" || RiskLevel.state == "CRITICAL")) {
         Relay.sendCommand(ON)
         Buzzer.sendCommand(ON)
     }
 end
 
-// Rule to trigger the alarm when both motion and door are detected, but only if motion automation is enabled.
-/*rule "Door And Motion Trigger Alarm"
-when
-    Item Motion changed or
-    Item Door changed
-then
-    if (MotionAutomation.state == ON && Door.state == ON && Motion.state == ON) {
-        Relay.sendCommand(ON)
-        Buzzer.sendCommand(ON)
-    }
-end
-
-// Rule to trigger the alarm when both vibration and door are detected, but only if motion automation is enabled.
-rule "Door And Vibration Trigger Alarm"
-when
-    Item Vibration received update "ON"
-then
-    if (MotionAutomation.state == ON && Door.state == ON) {
-        Relay.sendCommand(ON)
-        Buzzer.sendCommand(ON)
-    }
-end*/
 
 // Rule to disable the alarm when touch is detected.
 rule "Touch Acknowledges Alarm"

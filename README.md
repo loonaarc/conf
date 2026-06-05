@@ -60,7 +60,7 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
    - vibration, sound level, temperature
    - relay, buzzer power, buzzer intensity, touch acknowledgement
 4. Show the GeoSphere Austria external safety context.
-5. Enable `Motion automation`.
+5. Enable `Alarm automation`.
 6. Trigger door + motion, or door + vibration.
 7. Show that openHAB commands the ESP #2 relay and buzzer.
 8. Touch the alarm-node touch sensor to acknowledge and silence the alarm.

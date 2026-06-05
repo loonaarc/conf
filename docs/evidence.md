@@ -179,14 +179,14 @@ Figure 11c should prove that the context node now publishes temperature together
 Figure 12 shows the distributed automation in `events.log`:
 
 ```text
-1. MotionAutomation is switched ON in the openHAB UI.
+1. Alarm automation is switched ON in the openHAB UI.
 2. Vibration from ESP #3 is received by openHAB.
 3. Door/reed and motion from ESP #1 are received by openHAB.
 4. openHAB rule sends ON commands to the relay and buzzer on ESP #2.
 5. BuzzerCommand sends the configured buzzer intensity value.
 6. Touch from ESP #2 is received as acknowledgement.
 7. openHAB rule sends OFF commands to the relay and buzzer on ESP #2.
-8. MotionAutomation is switched OFF again.
+8. Alarm automation is switched OFF again.
 ```
 
 This proves the complete path from distributed sensor events through openHAB rule logic to actuator commands on the alarm node.

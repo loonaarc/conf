@@ -243,7 +243,7 @@ The channels extract the warning area, number of active warnings, first warning 
 | `AustriaWarningCount` | `Number` | GeoSphere Austria active warning count |
 | `AustriaWarningLevel` | `Number` | GeoSphere Austria first warning level |
 | `AustriaWarningText` | `String` | GeoSphere Austria first warning text |
-| `MotionAutomation` | `Switch` | Local openHAB control, not MQTT-linked |
+| `AlarmAutomation` | `Switch` | Local openHAB control for alarm automation, not MQTT-linked |
 
 Items are the values that the UI displays and the rules use.
 
@@ -262,7 +262,7 @@ The current UI shows:
 - touch acknowledgement state for ESP #2
 - PIR motion state
 - reed/door state
-- motion automation enable switch
+- alarm automation enable switch
 - DS18B20 temperature in the context node frame
 - external GeoSphere Austria warning context
 
@@ -274,7 +274,7 @@ The current UI shows:
 door AND (motion OR vibration)
 ```
 
-If `MotionAutomation` is ON, combined sensor evidence triggers the alarm node:
+If `AlarmAutomation` is ON, combined sensor evidence triggers the alarm node:
 
 ```text
 Door + Motion -> openHAB rule -> Relay/Buzzer ON
