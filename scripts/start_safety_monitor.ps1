@@ -10,6 +10,7 @@ What it opens:
 - MQTT Explorer
 - openHAB
 - openHAB Basic UI sitemap
+- myopenHAB remote Basic UI sitemap
 
 Run from PowerShell:
 .\scripts\start_safety_monitor.ps1
@@ -26,6 +27,7 @@ $tasmotaUrls = @(
 
 # Basic UI page generated from sitemaps/safety_monitor.sitemap.
 $basicUiUrl = "http://localhost:8080/basicui/app?sitemap=safety_monitor"
+$remoteBasicUiUrl = "https://myopenhab.org/basicui/app?sitemap=safety_monitor"
 
 # Local tool paths used in this Windows lab setup.
 $mosquittoPath = "C:\Program Files\Mosquitto\mosquitto.exe"
@@ -94,7 +96,10 @@ if (Test-Path -LiteralPath $openHabStart) {
 Write-Host "Waiting briefly before opening the Basic UI..."
 Start-Sleep -Seconds 15
 
-Write-Host "Opening openHAB Basic UI..."
+Write-Host "Opening local openHAB Basic UI..."
 Start-Process $basicUiUrl
+
+Write-Host "Opening myopenHAB remote Basic UI..."
+Start-Process $remoteBasicUiUrl
 
 Write-Host "Done. Keep the Mosquitto and openHAB windows open while testing."

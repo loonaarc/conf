@@ -27,9 +27,9 @@ The two parts are intentionally separated. The openHAB system should still work 
 
 | Node | Topic | Role | Status |
 | --- | --- | --- | --- |
-| ESP #1 | `safety_monitor_1` | PIR, reed switch, DS18B20 temperature | Implemented |
-| ESP #2 | `safety_alarm_1` | Relay and PWM buzzer actuator | Implemented |
-| ESP #3 | `safety_context_1` | Vibration, analog microphone value, touch acknowledgement | Implemented |
+| ESP #1 | `safety_monitor_1` | PIR, reed switch | Implemented |
+| ESP #2 | `safety_alarm_1` | Relay, PWM buzzer actuator, touch acknowledgement | Implemented |
+| ESP #3 | `safety_context_1` | Vibration, analog microphone value, DS18B20 temperature | Implemented |
 | ESP32 audio node | `safety_audio_1` | INMP441 microphone and TinyML sound class | Planned |
 
 ## Work Packages

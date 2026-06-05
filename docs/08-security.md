@@ -11,6 +11,7 @@ This project is a lab prototype. The current setup prioritizes local demonstrabi
 | openHAB host | Local Windows laptop running openHAB 5.1.4 |
 | openHAB local URL | `http://localhost:8080` |
 | Basic UI URL | `http://localhost:8080/basicui/app?sitemap=safety_monitor` |
+| Remote openHAB access | myopenHAB Cloud Connector |
 | MQTT broker | Mosquitto on the local laptop |
 | MQTT port | `1883` |
 | MQTT transport | Plain local MQTT, no TLS |
@@ -27,9 +28,9 @@ The Tasmota nodes are reachable on the local lab network:
 
 | Node | IP address | Topic | Role |
 | --- | --- | --- | --- |
-| ESP #1 Safety Monitor | `192.168.43.223` | `safety_monitor_1` | PIR, reed switch, temperature |
-| ESP #2 Safety Alarm | `192.168.43.110` | `safety_alarm_1` | Relay and buzzer actuator |
-| ESP #3 Safety Context | `192.168.43.240` | `safety_context_1` | Vibration, analog sound, touch acknowledgement |
+| ESP #1 Safety Monitor | `192.168.43.223` | `safety_monitor_1` | PIR, reed switch |
+| ESP #2 Safety Alarm | `192.168.43.110` | `safety_alarm_1` | Relay, buzzer actuator, touch acknowledgement |
+| ESP #3 Safety Context | `192.168.43.240` | `safety_context_1` | Vibration, analog sound, temperature |
 
 Security-relevant notes:
 
@@ -80,11 +81,19 @@ http://localhost:8080
 http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
+Remote access:
+
+```text
+myopenHAB Cloud Connector
+https://myopenhab.org/basicui/app?sitemap=safety_monitor
+```
+
 Security-relevant notes:
 
-- openHAB is currently treated as a local lab UI.
+- openHAB can be used locally through `localhost`.
+- Remote access is handled through myopenHAB instead of direct port forwarding.
 - The project should not use direct public port forwarding to expose openHAB.
-- If remote access is required, use a safer method such as VPN or myopenHAB cloud instead of opening port `8080` to the internet.
+- The myopenHAB UUID and secret must not be committed, published, or shown in screenshots.
 - The openHAB console uses SSH on port `8101`; default credentials should be changed in a real deployment.
 
 ## Persistence Security
@@ -136,7 +145,7 @@ This is one of the strongest privacy arguments for the TinyML extension.
 | MQTT without TLS | Local lab network only | MQTT TLS |
 | Anonymous MQTT | Acceptable only for lab testing | MQTT username/password |
 | Tasmota web UI exposure | Local network only | Device passwords and isolated IoT network |
-| openHAB public exposure | No direct public exposure planned | VPN or myopenHAB cloud |
+| openHAB public exposure | myopenHAB Cloud Connector, no direct port forwarding | VPN or myopenHAB cloud |
 | Raw audio privacy | No raw audio in normal MQTT path | TinyML summary payloads only |
 | Device outage invisible | MQTT LWT shown in openHAB UI | Keep LWT and alert on offline nodes |
 | Stored history data | Local SQLite database | Protect database and host account |
@@ -149,6 +158,7 @@ Recommended evidence screenshots:
 docs/evidence/23-mosquitto-local-broker-config.png
 docs/evidence/24-tasmota-mqtt-config-safety-monitor.png
 docs/evidence/25-openhab-local-ui-access.png
+docs/evidence/26-myopenhab-remote-access-online.png
 ```
 
 Avoid screenshots that reveal real passwords. If a screenshot contains a password field, crop or obscure it before adding it to the project evidence.

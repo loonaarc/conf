@@ -216,13 +216,12 @@ The relay shield uses:
 GPIO5 (D1) -> Relay1
 ```
 
-The relay has now been moved to ESP #2, the alarm node. ESP #1 should become the clean monitoring node with PIR, reed, and temperature only after openHAB relay control is moved to `safety_alarm_1`.
+The relay has now been moved to ESP #2, the alarm node. ESP #1 is the clean monitoring node with PIR and reed switch only. Environmental context such as temperature is handled by ESP #3.
 
 
 The current monitoring node uses:
 
 ```text
-GPIO2  (D4) -> DS18x20
 GPIO4  (D2) -> Switch1
 GPIO12 (D6) -> Switch2
 ```
@@ -233,6 +232,7 @@ The alarm node relay uses:
 ESP #2 topic: safety_alarm_1
 GPIO5 (D1) -> Relay1
 GPIO14 (D5) -> PWM1, buzzer
+GPIO4 (D2) -> Switch1, touch / acknowledge sensor
 ```
 
 The context node uses:
@@ -240,8 +240,7 @@ The context node uses:
 ```text
 ESP #3 topic: safety_context_1
 GPIO5 (D1) -> Switch1, vibration sensor
-GPIO4 (D2) -> None
-GPIO14 (D5) -> Switch2, touch / acknowledge sensor
+GPIO14 (D5) -> DS18x20 temperature sensor
 GPIO17 (A0) -> ADC Input / Analog, microphone AO
 ```
 
@@ -316,8 +315,11 @@ The script opens:
 - MQTT Explorer
 - openHAB
 - openHAB Basic UI at `http://localhost:8080/basicui/app?sitemap=safety_monitor`
+- myopenHAB remote Basic UI at `https://myopenhab.org/basicui/app?sitemap=safety_monitor`
 
 Keep the Mosquitto and openHAB windows open while testing. MQTT Explorer may still need the saved broker connection selected manually.
+
+The myopenHAB remote route opens the same Basic UI sitemap through the cloud connector. The default MainUI overview may be empty because this project currently uses a file-based Basic UI sitemap instead of MainUI pages.
 
 In this lab setup, Mosquitto could be started simply by opening the Mosquitto installation folder "C:\Program Files\Mosquitto\mosquitto.exe" and double-clicking:
 
@@ -424,6 +426,7 @@ Buzzer off:     cmnd/safety_alarm_1/POWER2
 Motion state:   stat/safety_monitor_1/RESULT
 Context events: stat/safety_context_1/RESULT
 Context sensor: tele/safety_context_1/SENSOR
+Alarm touch:    stat/safety_alarm_1/RESULT
 ```
 
 For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
@@ -433,11 +436,13 @@ For the lab workflow, open MQTT Explorer after Tasmota says `MQT: Connected`:
 3. Connect to the broker at `192.168.43.26` or `localhost`, port `1883`, depending on where MQTT Explorer is running.
 4. Trigger the PIR or reed switch.
 5. Check that `stat/safety_monitor_1/RESULT` changes.
-6. Check that the working DS18x20 sensor publishes temperature under `tele/safety_monitor_1/SENSOR`.
-7. Trigger the vibration or touch sensor.
+6. Check that the working DS18x20 sensor publishes temperature under `tele/safety_context_1/SENSOR`.
+7. Trigger the vibration sensor on ESP #3.
 8. Check that `stat/safety_context_1/RESULT` changes.
-9. Make sound near the microphone.
-10. Check whether `tele/safety_context_1/SENSOR` shows a changing `ANALOG.A0` value.
+9. Trigger the touch sensor on ESP #2.
+10. Check that `stat/safety_alarm_1/RESULT` changes.
+11. Make sound near the microphone.
+12. Check whether `tele/safety_context_1/SENSOR` shows a changing `ANALOG.A0` value.
 
 Verified monitoring-node MQTT results:
 
@@ -446,8 +451,10 @@ tele/safety_monitor_1/LWT = Online
 stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"ON"}}
 stat/safety_monitor_1/RESULT = {"Switch1":{"Action":"OFF"}}
 stat/safety_monitor_1/RESULT includes Switch2 when the reed is triggered by a magnet
-tele/safety_monitor_1/SENSOR includes Switch1, Switch2, and DS18B20 temperature
-stat/safety_context_1/RESULT includes Switch1 for vibration and Switch2 for touch events
+tele/safety_monitor_1/SENSOR includes monitoring-node telemetry
+tele/safety_context_1/SENSOR includes ANALOG.A0 for the microphone and DS18B20 temperature
+stat/safety_context_1/RESULT includes Switch1 for vibration events
+stat/safety_alarm_1/RESULT includes Switch1 for touch acknowledgement events
 tele/safety_context_1/SENSOR includes ANALOG.A0 for the microphone
 ```
 
@@ -456,10 +463,18 @@ For the context node, use this verified Tasmota console command set:
 ```text
 SetOption114 1
 SwitchMode1 1
-SwitchMode2 1
 ```
 
-`SetOption114 1` detaches the sensor switches from Tasmota's default power behavior. The goal is to see `Switch1` and `Switch2` action messages instead of `POWER` messages for the context node.
+`SetOption114 1` detaches the sensor switch from Tasmota's default power behavior. The goal is to see `Switch1` action messages instead of `POWER` messages for the context node.
+
+For the alarm-node touch input, use this Tasmota console command set on ESP #2:
+
+```text
+SetOption114 1
+SwitchMode1 1
+```
+
+The goal is to see touch acknowledgement events on `stat/safety_alarm_1/RESULT` while relay and buzzer commands still work through their own command topics.
 
 If only `Switch1` updates immediately, that is still useful progress: the PIR path works. The reed switch creates `Switch2` messages on `stat/safety_monitor_1/RESULT` only when its digital output changes. If telemetry shows `"Switch2":"OFF"` but no change event appears, check the reed module `DO` pin, magnet position, shared GND, and the `GPIO12 (D6) -> Switch2` Tasmota setting.
 
@@ -469,7 +484,7 @@ The Lab 1 MQTT topic answers were:
 
 ```text
 Connection status topic: tele/safety_monitor_1/LWT
-Temperature data topic:  tele/safety_monitor_1/SENSOR
+Temperature data topic:  tele/safety_context_1/SENSOR
 Command topic prefix:    cmnd/safety_monitor_1/
 Relay command topic:     cmnd/safety_alarm_1/POWER
 Buzzer dimmer topic:     cmnd/safety_alarm_1/Dimmer
@@ -499,6 +514,12 @@ For the Basic UI sitemap, use:
 
 ```text
 http://localhost:8080/basicui/app?sitemap=safety_monitor
+```
+
+If myopenHAB Cloud Connector is online, the same sitemap can be reached remotely through:
+
+```text
+https://myopenhab.org/basicui/app?sitemap=safety_monitor
 ```
 
 ## How To Use It

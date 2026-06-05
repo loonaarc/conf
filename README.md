@@ -8,9 +8,9 @@ The project demonstrates a local safety system where multiple sensor nodes publi
 
 | Node / Component | Role | Implemented Hardware / Data |
 | --- | --- | --- |
-| ESP #1 `safety_monitor_1` | Monitoring node | PIR motion, reed/door sensor, DS18B20 temperature |
-| ESP #2 `safety_alarm_1` | Alarm actuator node | Relay, PWM buzzer |
-| ESP #3 `safety_context_1` | Context and acknowledgement node | Vibration sensor, analog microphone value, touch sensor |
+| ESP #1 `safety_monitor_1` | Monitoring node | PIR motion, reed/door sensor |
+| ESP #2 `safety_alarm_1` | Alarm and acknowledgement node | Relay, PWM buzzer, touch acknowledgement |
+| ESP #3 `safety_context_1` | Context node | Vibration sensor, analog microphone value, DS18B20 temperature |
 | Mosquitto | MQTT broker | Local message broker for all Tasmota/openHAB MQTT traffic |
 | openHAB | UI and rule engine | Basic UI, MQTT binding, HTTP binding, automation rules |
 | GeoSphere Austria | External safety context | Official warning area, warning count, warning level, warning text |
@@ -56,14 +56,14 @@ http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
 3. Show the three node groups in the UI:
-   - motion, door/reed, temperature
-   - vibration, sound level, touch
-   - relay, buzzer power, buzzer intensity
+   - motion, door/reed
+   - vibration, sound level, temperature
+   - relay, buzzer power, buzzer intensity, touch acknowledgement
 4. Show the GeoSphere Austria external safety context.
 5. Enable `Motion automation`.
 6. Trigger door + motion, or door + vibration.
 7. Show that openHAB commands the ESP #2 relay and buzzer.
-8. Touch the touch sensor to acknowledge and silence the alarm.
+8. Touch the alarm-node touch sensor to acknowledge and silence the alarm.
 9. Show `events.log` and/or MQTT Explorer as proof of the data flow.
 
 ## Start Script

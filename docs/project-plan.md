@@ -43,8 +43,8 @@ Available modules and hardware priorities are documented in [02-hardware.md](02-
 | ESP | Role | Components | Purpose |
 | --- | --- | --- | --- |
 | ESP #1 | Monitoring node | PIR, reed switch | Detect motion and door/window opening |
-| ESP #2 | Alarm node | Relay, PWM-controlled buzzer | React to alerts from openHAB |
-| ESP #3 | Safety context node | Vibration sensor, microphone, touch sensor | Detect shock/loud sound and provide manual acknowledge input |
+| ESP #2 | Alarm and acknowledgement node | Relay, PWM-controlled buzzer, touch sensor | React to alerts from openHAB and provide local acknowledgement |
+| ESP #3 | Safety context node | Vibration sensor, microphone, DS18B20 temperature | Provide environmental/context readings |
 | ESP #4 | Optional auxiliary/status node | Built-in LED first, optional extra sensor later | Optional extension if the fourth board works |
 
 ## Recommended Device Names
@@ -75,8 +75,8 @@ Keep a small inventory table while identifying the boards:
 | Role | Topic | IP address | MAC address | Notes |
 | --- | --- | --- | --- | --- |
 | Monitoring node | `safety_monitor_1` | `192.168.43.223` | `A8:48:FA:C1:7D:DD` | ESP #1, label `1`, PIR + reed |
-| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay + PWM buzzer |
-| Safety context node | `safety_context_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone + touch |
+| Alarm node | `safety_alarm_1` | `192.168.43.110` | `C4:D8:D5:12:B5:63` | ESP #2, label `2`, relay + PWM buzzer + touch |
+| Safety context node | `safety_context_1` | `192.168.43.240` | `EC:64:C9:DF:12:9B` | ESP #3, label `3`, vibration + microphone + temperature |
 | Optional auxiliary/status node | `safety_aux_1` | not working yet | TBD | optional extension |
 
 The fourth D1 Mini is useful but not required for the core project. The final check requires at least two D1 Mini devices with sensors/actuators. The stable core should therefore use ESP #1 as monitoring node and ESP #2 as alarm node. ESP #3 adds extra sensor capability, and ESP #4 remains an optional extension if it can be recovered later.
@@ -128,7 +128,7 @@ This D1 Mini will be used as the actuator/alarm node.
 | MQTT topic | `safety_alarm_1` |
 | MQTT full topic | `cmnd/safety_alarm_1/` |
 | HTTP API | Enabled |
-| Planned actuators | relay working, buzzer working with `PWM1` / `Dimmer 50` |
+| Planned actuators/input | relay working, buzzer working with `PWM1` / `Dimmer 50`, touch acknowledgement on D2 |
 
 ### ESP #3: Safety Context 1
 
@@ -152,7 +152,7 @@ This D1 Mini was flashed with Tasmotizer and configured through `Send config`.
 | MQTT topic | `safety_context_1` |
 | MQTT full topic | `cmnd/safety_context_1/` |
 | HTTP API | Enabled |
-| Sensors | vibration sensor, microphone, touch sensor, optional TinyML experiment later |
+| Sensors | vibration sensor, microphone, DS18B20 temperature, optional TinyML experiment later |
 
 ## MQTT Topic Design
 
@@ -249,7 +249,7 @@ The final IoT Applications check requires more than just a working sensor. The a
 | Requirement area | Project answer |
 | --- | --- |
 | At least 2 D1 Mini devices with sensors/actuators | Monitoring node + alarm node |
-| Additional sensors/actuators | PIR, reed, vibration, microphone, buzzer, relay |
+| Additional sensors/actuators | PIR, reed, vibration, microphone, temperature, buzzer, relay |
 | File-based openHAB config | Keep using `.things`, `.items`, `.rules`, `.sitemap`, `addons.cfg` |
 | Device connection status in UI | Add LWT/availability items for each node |
 | Manual actuator control in UI | Add switches for buzzer/relay alarm node |
@@ -269,13 +269,13 @@ The Lab 4 mid-term check is a status check, not the final project. The project s
 | Mid-term requirement | Current project answer |
 | --- | --- |
 | 2x D1 mini devices | ESP #1 works; ESP #2 is flashed/named and relay/buzzer work in Tasmota |
-| At least one actuator or sensor per D1 mini | ESP #1 has PIR, reed, DS18B20; ESP #2 has relay and buzzer actuators |
+| At least one actuator or sensor per D1 mini | ESP #1 has PIR/reed; ESP #2 has relay and buzzer actuators; ESP #3 has context sensors |
 | Network setup | D1 nodes -> Mosquitto -> openHAB -> browser/MQTT Explorer |
 | Mosquitto broker | Installed and used locally |
 | Devices 1 and 2 MQTT access | ESP #1 proven; ESP #2 should be shown in MQTT Explorer with `safety_alarm_1` |
 | openHAB installed | Done |
 | Basic UI sitemap | `safety_monitor` sitemap exists |
-| Display sensor/actuator value in UI | ESP #1 motion, door, temperature shown; ESP #2 relay/buzzer controls added |
+| Display sensor/actuator value in UI | ESP #1 motion/door shown; ESP #2 relay/buzzer controls added; ESP #3 context values shown |
 | Manual actuator action in UI | ESP #2 relay/buzzer can be controlled from openHAB |
 | External webservice via HTTP binding | Done: GeoSphere Austria warnings in Basic UI |
 | Basic openHAB rules | Done: door AND (motion OR vibration) triggers ESP #2; touch acknowledges |
@@ -290,7 +290,7 @@ optional rule: ESP #1 event triggers ESP #2 actuator
 
 ESP #2 now has the relay and PWM buzzer, and openHAB has separate relay, buzzer power, and buzzer level items for `safety_alarm_1`. ESP #1 should remain sensor-only.
 
-ESP #3 is now wired as the safety context node with vibration, microphone, and touch modules. For the mid-term, ESP #3 can be shown as extra progress. For the final project, it should become part of the risk-score and acknowledgement flow:
+ESP #3 is now wired as the safety context node with vibration, microphone, and temperature modules. For the mid-term, ESP #3 can be shown as extra progress. For the final project, it should become part of the risk-score flow:
 
 ```text
 PIR or reed event from ESP #1
@@ -298,7 +298,7 @@ PIR or reed event from ESP #1
 -> higher risk score
 -> relay/buzzer command to ESP #2
 
-touch event from ESP #3
+touch event from ESP #2
 -> acknowledge, silence, arm, or disarm action in openHAB
 ```
 
@@ -307,7 +307,6 @@ The context-node switch inputs are detached from Tasmota's default `POWER` behav
 ```text
 SetOption114 1
 SwitchMode1 1
-SwitchMode2 1
 ```
 
 ## TinyML Extension Later
@@ -379,19 +378,19 @@ Monitoring Node
   MonitorNodeStatus
   Motion
   Door
-  Temperature
 
 Alarm Node
   AlarmNodeStatus
   Relay
   Buzzer
   BuzzerLevel
+  Touch
 
 Context Node
   ContextNodeStatus
   Vibration
   SoundLevel
-  Touch
+  Temperature
 
 External Safety Context
   AustriaWarningLocation

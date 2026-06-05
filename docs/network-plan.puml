@@ -21,17 +21,17 @@ node "Wi-Fi Router / Hotspot\n192.168.43.x" as wifi
 node "ESP #1 Safety Monitor\nIP: 192.168.43.223\nMQTT topic: safety_monitor_1" as esp1 {
   component "PIR motion\nD2 / Switch1" as pir
   component "Reed door\nD6 / Switch2" as reed
-  component "DS18B20 temperature\nD4 / DS18x20" as temp
 }
 
 node "ESP #2 Safety Alarm\nIP: 192.168.43.110\nMQTT topic: safety_alarm_1" as esp2 {
   component "Relay\nD1 / Relay1" as relay
   component "PWM buzzer\nD5 / PWM1" as buzzer
+  component "Touch acknowledge\nD2 / Switch1" as touch
 }
 
 node "ESP #3 Safety Context\nIP: 192.168.43.240\nMQTT topic: safety_context_1" as esp3 {
   component "Vibration\nD1 / Switch1" as vibration
-  component "Touch acknowledge\nD5 / Switch2" as touch
+  component "DS18B20 temperature\nD5 / DS18x20" as temp
   component "Microphone analog\nA0 / ADC" as mic
 }
 

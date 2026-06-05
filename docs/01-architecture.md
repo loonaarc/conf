@@ -42,8 +42,8 @@ The network plan can be rendered from [network-plan.puml](network-plan.puml). It
 | ESP #1 Safety Monitor Node  |        | ESP #3 Safety Context Node  |
 | topic: safety_monitor_1     |        | topic: safety_context_1     |
 | D2 -> PIR / Switch1         |        | D1 -> Vibration / Switch1   |
-| D6 -> Reed / Switch2        |        | D5 -> Touch / Switch2       |
-| D4 -> DS18B20 temperature   |        | A0 -> Microphone analog     |
+| D6 -> Reed / Switch2        |        | D5 -> DS18B20 temperature   |
+|                             |        | A0 -> Microphone analog     |
 |                             |        +--------------+--------------+
 +--------------+--------------+                       |
                |                                      |
@@ -80,6 +80,7 @@ The network plan can be rendered from [network-plan.puml](network-plan.puml). It
              | Basic UI    |     | topic: safety_alarm_1       |
              +-------------+     | D1 -> Relay1                |
                                  | D5 -> PWM1 buzzer           |
+                                 | D2 -> Touch / Switch1       |
                                  +-----------------------------+
 
                     +-----------------------------+
@@ -140,6 +141,7 @@ tele/safety_monitor_1/SENSOR
 stat/safety_monitor_1/RESULT
 stat/safety_context_1/RESULT
 tele/safety_context_1/SENSOR
+stat/safety_alarm_1/RESULT
 stat/safety_alarm_1/POWER
 cmnd/safety_alarm_1/POWER
 cmnd/safety_alarm_1/Dimmer
@@ -151,10 +153,11 @@ Meaning:
 | Topic | Direction | Purpose |
 | --- | --- | --- |
 | `tele/safety_monitor_1/LWT` | Tasmota -> MQTT | Online/offline status |
-| `tele/safety_monitor_1/SENSOR` | Tasmota -> MQTT | Periodic sensor telemetry, including DS18B20 temperature |
+| `tele/safety_monitor_1/SENSOR` | Tasmota -> MQTT | Periodic monitoring-node telemetry |
 | `stat/safety_monitor_1/RESULT` | Tasmota -> MQTT | Immediate switch events from PIR/reed |
-| `stat/safety_context_1/RESULT` | Tasmota -> MQTT | Immediate switch events from vibration and touch |
-| `tele/safety_context_1/SENSOR` | Tasmota -> MQTT | Periodic context telemetry, including microphone `ANALOG.A0` |
+| `stat/safety_context_1/RESULT` | Tasmota -> MQTT | Immediate switch events from vibration |
+| `tele/safety_context_1/SENSOR` | Tasmota -> MQTT | Periodic context telemetry, including microphone `ANALOG.A0` and DS18B20 temperature |
+| `stat/safety_alarm_1/RESULT` | Tasmota -> MQTT | Touch acknowledgement event from ESP #2 |
 | `stat/safety_alarm_1/POWER` | Tasmota -> MQTT | ESP #2 relay state |
 | `cmnd/safety_alarm_1/POWER` | openHAB/MQTT -> Tasmota | ESP #2 relay command |
 | `cmnd/safety_alarm_1/Dimmer` | openHAB/MQTT -> Tasmota | ESP #2 PWM buzzer intensity |
@@ -177,18 +180,18 @@ The bridge connects openHAB to Mosquitto on:
 localhost:1883
 ```
 
-The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor channels. The `safety_alarm_1` Thing represents ESP #2 and exposes the relay and buzzer actuator channels. The `safety_context_1` Thing represents ESP #3 and exposes vibration, touch, and analog sound context.
+The `safety_monitor_1` Thing represents ESP #1 and exposes the monitoring sensor channels. The `safety_alarm_1` Thing represents ESP #2 and exposes the relay, buzzer actuator, and touch acknowledgement channels. The `safety_context_1` Thing represents ESP #3 and exposes vibration, temperature, and analog sound context.
 
 | Channel | MQTT topic | Transformation | Meaning |
 | --- | --- | --- | --- |
 | `motion` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch1.Action` | PIR motion from Switch1 |
 | `door` | `stat/safety_monitor_1/RESULT` | `JSONPATH:$.Switch2.Action` | Reed switch from Switch2 |
-| `temperature` | `tele/safety_monitor_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
+| `temperature` | `tele/safety_context_1/SENSOR` | `JSONPATH:$.DS18B20.Temperature` | DS18B20 temperature |
 | `relay` | `stat/safety_alarm_1/POWER`, `cmnd/safety_alarm_1/POWER` | none | Reads and commands the alarm relay |
 | `buzzerPower` | `stat/safety_alarm_1/POWER2`, `cmnd/safety_alarm_1/POWER2` | none | Stops or enables the PWM buzzer output |
 | `buzzerLevel` | `cmnd/safety_alarm_1/Dimmer` | none | Sends the PWM buzzer intensity |
 | `vibration` | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch1.Action` | Vibration event from ESP #3 |
-| `touch` | `stat/safety_context_1/RESULT` | `JSONPATH:$.Switch2.Action` | Manual acknowledge/silence input from ESP #3 |
+| `touch` | `stat/safety_alarm_1/RESULT` | `JSONPATH:$.Switch1.Action` | Manual acknowledge/silence input from ESP #2 |
 | `soundLevel` | `tele/safety_context_1/SENSOR` | `JSONPATH:$.ANALOG.A0` | Analog microphone value from ESP #3 |
 
 The context node should not be treated as an actuator. Its switch inputs are detached from Tasmota's default power-control behavior with:
@@ -196,10 +199,9 @@ The context node should not be treated as an actuator. Its switch inputs are det
 ```text
 SetOption114 1
 SwitchMode1 1
-SwitchMode2 1
 ```
 
-The intended integration is based on `Switch1` and `Switch2` sensor events plus `ANALOG.A0` telemetry.
+The intended context-node integration is based on `Switch1` sensor events plus `ANALOG.A0` and `DS18B20` telemetry.
 
 The reed switch originally produced `TOGGLE` actions. The Tasmota command below was needed so openHAB receives clean `ON` and `OFF` states:
 
@@ -235,7 +237,7 @@ The channels extract the warning area, number of active warnings, first warning 
 | `BuzzerLevel` | `Dimmer` | Local openHAB buzzer intensity preset |
 | `BuzzerCommand` | `Dimmer` | ESP #2 buzzer PWM command channel |
 | `Vibration` | `String` | ESP #3 vibration event channel |
-| `Touch` | `String` | ESP #3 touch acknowledgement channel |
+| `Touch` | `String` | ESP #2 touch acknowledgement channel |
 | `SoundLevel` | `Number` | ESP #3 microphone analog channel |
 | `AustriaWarningLocation` | `String` | GeoSphere Austria HTTP warning area |
 | `AustriaWarningCount` | `Number` | GeoSphere Austria active warning count |
@@ -257,10 +259,11 @@ The current UI shows:
 
 - relay switch for ESP #2
 - buzzer switch and buzzer level slider for ESP #2
+- touch acknowledgement state for ESP #2
 - PIR motion state
 - reed/door state
-- DS18B20 temperature
 - motion automation enable switch
+- DS18B20 temperature in the context node frame
 - external GeoSphere Austria warning context
 
 ## Rule Layer
@@ -278,7 +281,7 @@ Door + Motion -> openHAB rule -> Relay/Buzzer ON
 Door + Vibration -> openHAB rule -> Relay/Buzzer ON
 ```
 
-The touch sensor on ESP #3 acknowledges the alarm:
+The touch sensor on ESP #2 acknowledges the alarm:
 
 ```text
 Touch ON -> openHAB rule -> Relay/Buzzer OFF

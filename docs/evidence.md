@@ -8,7 +8,7 @@ Tip: after pasting an image, keep the short caption below it. The captions can b
 
 ![Monitoring node current wiring](evidence/01-monitor-node-wiring-current.png)
 
-Figure 1 shows ESP #1, the monitoring node, connected to the PIR sensor, reed switch module, DS18B20 temperature sensor, and shared 3.3V/GND breadboard rails.
+Figure 1 shows the earlier ESP #1 monitoring-node wiring with PIR, reed switch, DS18B20 temperature sensor, and shared 3.3V/GND breadboard rails. The final architecture moves DS18B20 temperature to the ESP #3 context node; capture updated wiring evidence after the move.
 
 ## 2. Monitoring Node Tasmota Module Configuration
 
@@ -17,7 +17,7 @@ Figure 2 shows the Tasmota GPIO configuration for ESP #1:
 
 ```text
 D2 / GPIO4  -> Switch1, PIR motion sensor
-D4 / GPIO2  -> DS18x20 temperature sensor
+D4 / GPIO2  -> DS18x20 temperature sensor in the earlier setup
 D6 / GPIO12 -> Switch2, reed switch
 ```
 
@@ -43,7 +43,7 @@ This proves that the sensor node publishes PIR and reed events to the MQTT broke
 
 ![MQTT Explorer temperature sensor telemetry](evidence/05-mqtt-explorer-temperature-sensor.png)
 
-Figure 5 shows MQTT Explorer receiving DS18B20 temperature telemetry under:
+Figure 5 shows MQTT Explorer receiving DS18B20 temperature telemetry in the earlier setup under:
 
 ```text
 tele/safety_monitor_1/SENSOR
@@ -66,6 +66,7 @@ Figure 7 shows the Tasmota GPIO configuration for ESP #2:
 ```text
 D1 / GPIO5  -> Relay1
 D5 / GPIO14 -> PWM1 buzzer
+D2 / GPIO4  -> Switch1, touch acknowledgement
 Topic       -> safety_alarm_1
 ```
 
@@ -73,7 +74,7 @@ Topic       -> safety_alarm_1
 
 ![Safety context node wiring](evidence/08-context-node-wiring.png)
 
-Figure 8 shows ESP #3, the safety context node, connected to the vibration sensor, microphone module, and touch sensor.
+Figure 8 shows ESP #3, the safety context node, connected to the vibration sensor, microphone module, and DS18B20 temperature sensor.
 
 ## 9. Safety Context Node Tasmota Module Configuration
 
@@ -82,8 +83,7 @@ Figure 9 shows the Tasmota GPIO configuration for ESP #3:
 
 ```text
 D1 / GPIO5 -> Switch1, vibration sensor
-D2 / GPIO4 -> None
-D5 / GPIO14 -> Switch2, touch / acknowledge sensor
+D5 / GPIO14 -> DS18x20 temperature sensor
 A0 / GPIO17 -> ADC Input / Analog, microphone AO
 Topic      -> safety_context_1
 ```
@@ -102,15 +102,15 @@ tele/safety_context_1/SENSOR
 Current observation:
 
 ```text
-tele/safety_context_1/SENSOR includes Switch1, Switch2, and ANALOG.A0
+tele/safety_context_1/SENSOR includes ANALOG.A0 and DS18B20 temperature
 SetOption114 1 detached the context-node switches from generic POWER behavior
-SwitchMode1 1 and SwitchMode2 1 were applied
+SwitchMode1 1 was applied
 vibration sensor now publishes clean Switch1 ON/OFF action messages
-touch sensor now publishes clean Switch2 ON/OFF action messages
 microphone is available as analog A0 telemetry
+DS18B20 temperature is available as context-node telemetry
 ```
 
-This proves the context node is online, the vibration and touch inputs publish clean MQTT switch events, and the microphone analog value is visible in telemetry.
+This proves the context node is online, the vibration input publishes clean MQTT switch events, and the microphone and temperature values are visible in telemetry.
 
 ## 11. openHAB Basic UI: Current Safety-Monitoring View
 
@@ -119,10 +119,58 @@ This proves the context node is online, the vibration and touch inputs publish c
 Figure 11 shows the current openHAB Basic UI with all three distributed nodes integrated:
 
 ```text
-ESP #1 -> motion, door/reed, temperature
+ESP #1 -> motion, door/reed
 ESP #2 -> relay, buzzer power, buzzer intensity
-ESP #3 -> vibration, sound level, touch acknowledgement
+ESP #3 -> vibration, sound level, temperature
 ```
+
+## 11b. openHAB Basic UI: Temperature Moved To Context Node
+
+Add screenshot after rewiring:
+
+```text
+docs/evidence/11b-openhab-basic-ui-temperature-context-node.png
+```
+
+Expected screenshot content:
+
+```text
+Monitoring Node
+  Motion
+  Door/Reed
+
+Context Node
+  Vibration
+  Sound level
+  Temperature
+
+Alarm Node
+  Touch acknowledgement
+```
+
+Figure 11b should show the final per-node UI after moving the DS18B20 temperature sensor to the context node and the touch acknowledgement input to the alarm node.
+
+## 11c. MQTT Explorer: Context Node Temperature Telemetry
+
+Add screenshot after rewiring:
+
+```text
+docs/evidence/11c-mqtt-explorer-context-temperature.png
+```
+
+Expected MQTT topic:
+
+```text
+tele/safety_context_1/SENSOR
+```
+
+Expected payload content:
+
+```text
+DS18B20.Temperature
+```
+
+Figure 11c should prove that the context node now publishes temperature together with its other context telemetry.
 
 ## 12. Combined Sensor Events Trigger The Alarm Node
 
@@ -136,7 +184,7 @@ Figure 12 shows the distributed automation in `events.log`:
 3. Door/reed and motion from ESP #1 are received by openHAB.
 4. openHAB rule sends ON commands to the relay and buzzer on ESP #2.
 5. BuzzerCommand sends the configured buzzer intensity value.
-6. Touch from ESP #3 is received as acknowledgement.
+6. Touch from ESP #2 is received as acknowledgement.
 7. openHAB rule sends OFF commands to the relay and buzzer on ESP #2.
 8. MotionAutomation is switched OFF again.
 ```
@@ -151,7 +199,8 @@ Figure 13 shows live MQTT topics for all three distributed nodes:
 
 ```text
 stat/safety_monitor_1/RESULT  -> monitoring-node sensor events
-stat/safety_context_1/RESULT  -> context-node touch/vibration events
+stat/safety_context_1/RESULT  -> context-node vibration events
+stat/safety_alarm_1/RESULT    -> alarm-node touch acknowledgement events
 stat/safety_alarm_1/POWER1    -> alarm-node relay state
 stat/safety_alarm_1/POWER2    -> alarm-node buzzer state
 cmnd/safety_alarm_1/POWER     -> relay command sent through MQTT
@@ -265,6 +314,24 @@ Figure 24 shows the Tasmota MQTT configuration for the safety monitor node, incl
 
 Figure 25 should show that the current openHAB UI is used as a local lab interface, not a directly public internet endpoint.
 
+## 26. myopenHAB Remote Access Online
+
+![myopenHAB remote access online](evidence/26-myopenhab-remote-access-online.png)
+
+Figure 26 should prove internet access to the openHAB UI through myopenHAB Cloud Connector instead of direct public port forwarding.
+
+## 27. myopenHAB Remote Basic UI Sitemap
+
+![myopenHAB remote Basic UI sitemap](evidence/27-myopenhab-remote-basic-ui.png)
+
+Figure 27 shows the project sitemap route opened remotely through myopenHAB:
+
+```text
+https://myopenhab.org/basicui/app?sitemap=safety_monitor
+```
+
+This is the relevant remote UI for the project because the implementation uses a file-based Basic UI sitemap rather than MainUI pages.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
@@ -278,11 +345,12 @@ The final proof chain for the recorded demo is:
 6. openHAB recalculates RiskScore and RiskLevel from distributed sensor evidence
 7. RiskLevel HIGH or CRITICAL triggers MQTT commands to ESP #2 / Safety Alarm 1
 8. ESP #2 switches the relay and buzzer actuator
-9. Touch event from ESP #3 acknowledges the alarm
+9. Touch event from ESP #2 acknowledges the alarm
 10. openHAB sends MQTT OFF commands to ESP #2
 11. JDBC/SQLite persistence stores selected Item history
 12. Basic UI history charts display RiskScore, Temperature, and SoundLevel
-13. openHAB automation is disabled from the Basic UI
+13. myopenHAB provides remote access without direct public port forwarding
+14. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:

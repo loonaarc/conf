@@ -19,9 +19,9 @@ The final check is graded with 30 points and uses the MoSCoW categories from the
 | openHAB rule: device 1 value change triggers device 2 actuator | Must | 1 | Done | Risk level now triggers the alarm node |
 | Webservice-based rule to control device actuator | Must | 1 | Done | Warning count/level are used as risk-score modifiers |
 | Display historical values in openHAB UI | Must | 1 | Done | Capture history chart evidence |
-| Internet access to openHAB UI | Must | 1 | Missing | Decide safe access method and document it |
+| Internet access to openHAB UI | Must | 1 | Done | Capture myopenHAB online evidence |
 | Short demonstration video | Should | 2 | Missing | Record final flow after UI/history is stable |
-| Additional actuators/sensors used | Should | 1 | Done | ESP #3 context node and sound/vibration/touch support this |
+| Additional actuators/sensors used | Should | 1 | Done | ESP #3 context node plus sound/vibration/temperature and ESP #2 touch support this |
 | Geolocation-based map | Should | 1 | Missing | Add if time remains |
 | Persistence implementation, not default rrd4j | Should | 2 | Done | Capture JDBC/SQLite proof |
 | Customization of UI according to use case | Should | 2 | Done/in progress | Per-node sitemap is implemented; final screenshot still needed |

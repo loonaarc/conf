@@ -28,8 +28,6 @@ sitemap safety_monitor label="Safety Monitor"
         // Reed switch / door state from Switch2.
         Text item=Door label="Door/Reed [%s]" icon="door"
 
-        // DS18B20 temperature from Tasmota SENSOR telemetry.
-        Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
     }
 
     // Alarm node frame contains status and actuator controls from ESP #2.
@@ -42,6 +40,9 @@ sitemap safety_monitor label="Safety Monitor"
 
         // Manual relay control; this should click the relay shield.
         Switch item=Relay label="Relay" icon="wallswitch"
+
+        // Touch acknowledgement input on ESP #2.
+        Text item=Touch label="Touch acknowledgement [%s]" icon="input"
     }
 
     // Context node frame contains status and context sensors from ESP #3.
@@ -55,8 +56,9 @@ sitemap safety_monitor label="Safety Monitor"
         // Raw microphone analog value from ADC on ESP #3.
         Text item=SoundLevel label="Sound level [%.0f]" icon="microphone"
 
-        // Touch state from Switch2 on ESP #3.
-        Text item=Touch label="Touch [%s]" icon="input"
+        // DS18B20 temperature from the context-node telemetry.
+        Text item=Temperature label="Temperature [%.1f C]" icon="temperature"
+
     }
 
     // Local automation frame contains openHAB-only controls.

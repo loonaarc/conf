@@ -17,6 +17,12 @@ Open:
 http://localhost:8080/basicui/app?sitemap=safety_monitor
 ```
 
+Remote Basic UI route through myopenHAB:
+
+```text
+https://myopenhab.org/basicui/app?sitemap=safety_monitor
+```
+
 Also keep MQTT Explorer and `events.log` visible for proof.
 
 ## Demo Steps
@@ -34,7 +40,7 @@ Also keep MQTT Explorer and `events.log` visible for proof.
 7. Show that openHAB receives the Item updates.
 8. Show the relay and buzzer on ESP #2 activating.
 9. Trigger vibration on ESP #3 as additional context evidence.
-10. Trigger touch on ESP #3 to acknowledge and silence the alarm.
+10. Trigger touch on ESP #2 to acknowledge and silence the alarm.
 11. Show GeoSphere Austria warning values in the external safety context frame.
 12. If TinyML is ready, trigger a sound event and show `label/confidence` arriving through MQTT.
 13. Point to the risk score or planned risk-score behavior.
@@ -63,19 +69,19 @@ Monitoring Node
   status
   motion
   door/reed
-  temperature
 
 Alarm Node
   status
   relay
   buzzer power
   buzzer intensity
+  touch acknowledgement
 
 Context Node
   status
   vibration
   sound level
-  touch acknowledgement
+  temperature
 
 External Safety Context
   GeoSphere warning values
