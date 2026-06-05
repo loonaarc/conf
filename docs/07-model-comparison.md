@@ -10,7 +10,7 @@ How does a regular TensorFlow audio classifier differ from a quantized TinyML/TF
 
 Classify short audio windows into a small number of classes.
 
-Candidate classes:
+Candidate classes for the later real safety dataset:
 
 ```text
 silence
@@ -19,14 +19,17 @@ clap_or_knock
 alarm_like
 ```
 
-If using TensorFlow Speech Commands for a more reproducible first version, use fewer classes such as:
+The prepared notebook currently uses ESC-50 and groups all 50 semantic sound classes into the 5 broader categories commonly used to describe the dataset:
 
 ```text
-yes
-no
-unknown
-silence
+animals
+natural_soundscape_water
+human_non_speech
+interior_domestic
+exterior_urban
 ```
+
+This is the default because it takes advantage of the whole ESC-50 dataset instead of using only a few hand-picked classes. For a more directly safety-themed second run, the notebook also has `ESC50_TASK = 'safety_subset'`, which groups selected classes into labels such as `siren_alarm` and `impact_or_glass`. If ESC-50 is too slow to download, the notebook still has a smaller Speech Commands fallback mode.
 
 ## Notebook
 
@@ -36,7 +39,7 @@ The prepared notebook is:
 tinyml/notebooks/sound_classification_comparison.ipynb
 ```
 
-It uses a laptop-side audio dataset first. This means the comparison is not blocked by soldering the INMP441 microphone. A laptop microphone can be added later for calibration or extra experiments, but the main comparison should use a fixed dataset so the results are reproducible.
+It uses a laptop/Colab-side audio dataset first. This means the comparison is not blocked by soldering the INMP441 microphone. A laptop microphone can be added later for calibration or extra experiments, but the main comparison should use a fixed dataset so the results are reproducible.
 
 The intended development setup is:
 
@@ -57,13 +60,16 @@ Local VS Code .venv kernel -> use the already installed local requirements
 The notebook contains:
 
 1. Dataset loading or dataset preparation.
-2. Feature extraction, for example spectrograms or MFCCs.
+2. Feature extraction with log-mel spectrograms.
 3. Regular TensorFlow/Keras model training as the laptop baseline.
-4. Evaluation with accuracy and confusion matrix.
-5. TensorFlow Lite conversion.
-6. Int8 quantization as the TinyML-style model.
-7. Model-size comparison.
-8. Summary table for regular vs TinyML.
+4. Training curves for checking underfitting or overfitting.
+5. Evaluation with accuracy and confusion matrices for both regular and TinyML models.
+6. TensorFlow Lite conversion.
+7. Int8 quantization as the TinyML-style model.
+8. Model-size comparison.
+9. Summary table for regular vs TinyML.
+
+The baseline should be reasonably meaningful before the TinyML comparison is interpreted. If regular TensorFlow accuracy is only slightly above chance, the conclusion should be that the feature/model setup is weak, not that TinyML itself is unsuitable. The current notebook therefore uses log-mel features and a stronger compact CNN instead of the first quick raw-spectrogram baseline.
 
 ## Comparison Table
 

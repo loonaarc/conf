@@ -1,6 +1,6 @@
 # TinyML Extension
 
-The TinyML extension adds an ESP32 audio node to the existing openHAB/MQTT safety-monitoring system.
+The TinyML extension adds ESP32 audio nodes to the existing openHAB/MQTT safety-monitoring system.
 
 ## Goal
 
@@ -24,6 +24,73 @@ INMP441 microphone
 | Firmware | Arduino/PlatformIO or ESP-IDF, not Tasmota |
 | Model | Quantized TensorFlow Lite / TFLite Micro audio classifier |
 | Output | Sound class, confidence, inference time |
+
+## Later Voice Command Node
+
+A second ESP32 can be used as a separate voice-command node. This should be treated as a later extension after the basic audio-classification comparison is working.
+
+| Field | Value |
+| --- | --- |
+| Topic | `safety_voice_1` |
+| Hardware | Second ESP32 WROOM + microphone |
+| Model | Tiny speech-command classifier |
+| Output | Command label, confidence, inference time |
+
+Planned voice commands:
+
+```text
+arm
+silence
+disarm_code
+unknown
+silence
+```
+
+The voice node is a convenience interface, not the highest-trust safety control. Touch on the physical alarm node remains the trusted local override.
+
+Control hierarchy:
+
+```text
+physical touch disarm > voice command > automatic risk rule
+```
+
+Recommended behavior:
+
+```text
+Touch on alarm node
+  -> relay OFF
+  -> buzzer OFF
+  -> AlarmAutomation OFF
+  -> AlarmState IDLE
+
+voice "arm" with high confidence
+  -> AlarmAutomation ON
+
+voice "silence" with high confidence
+  -> relay OFF
+  -> buzzer OFF
+
+voice "disarm_code" with high confidence
+  -> optional convenience disarm
+  -> should be documented as weaker than physical touch because replay or false recognition is possible
+```
+
+Planned MQTT topic:
+
+```text
+tele/safety_voice_1/COMMAND
+```
+
+Example payload:
+
+```json
+{
+  "command": "arm",
+  "confidence": 0.91,
+  "inference_ms": 22,
+  "model": "voice_cmd_v1_int8"
+}
+```
 
 ## MQTT Payload
 
@@ -93,6 +160,9 @@ String TinyMLSoundClass "TinyML Sound Class [%s]"
 Number TinyMLSoundConfidence "TinyML Sound Confidence [%.2f]"
 Number TinyMLSoundRms "TinyML Sound RMS [%.2f]"
 Number TinyMLInferenceMs "TinyML Inference Time [%.0f ms]"
+String VoiceCommand "Voice Command [%s]"
+Number VoiceCommandConfidence "Voice Command Confidence [%.2f]"
+Number VoiceInferenceMs "Voice Inference Time [%.0f ms]"
 ```
 
 ## Scope
@@ -105,6 +175,7 @@ In scope:
 - local or temporary debug access to raw samples and feature previews
 - integration into openHAB risk score
 - comparison with regular TensorFlow model
+- later voice-command node for arming/silencing/disarm-code experiments
 
 Out of scope:
 
@@ -113,6 +184,7 @@ Out of scope:
 - permanent raw audio storage as part of the deployed system
 - production-grade alarm certification
 - large multi-class acoustic scene recognition
+- real speaker authentication or secure voice-password security
 
 ## Implementation Order
 
@@ -126,3 +198,5 @@ Out of scope:
 8. Add optional debug MQTT payloads for feature/sample previews.
 9. Add openHAB MQTT channels and Items.
 10. Add TinyML sound evidence to the risk-score rule.
+11. Later, use the second ESP32 as `safety_voice_1` for voice commands.
+12. Keep physical touch as the unconditional local disarm override.

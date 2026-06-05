@@ -367,6 +367,77 @@ tele/safety_audio_1/CLASSIFICATION
 
 with summarized data only.
 
+## Later ESP32 Voice Command Node
+
+The second ESP32 can become a separate TinyML speech-command node.
+
+Proposed role split:
+
+```text
+ESP32 #1 / safety_audio_1
+  environmental sound context
+  contributes to RiskScore
+
+ESP32 #2 / safety_voice_1
+  small voice-command interface
+  controls alarm mode only through summarized commands
+```
+
+Planned command set:
+
+```text
+arm
+silence
+disarm_code
+unknown
+silence
+```
+
+Voice commands should be treated as convenience input, not as strong security. A spoken password/passphrase can be demonstrated as `disarm_code`, but it is not real speaker authentication and could be replayed or misrecognized.
+
+Control hierarchy:
+
+```text
+physical touch disarm > voice command > automatic risk rule
+```
+
+Later openHAB behavior:
+
+```text
+Touch on alarm node
+  -> Relay OFF
+  -> Buzzer OFF
+  -> AlarmAutomation OFF
+  -> AlarmState IDLE
+
+Voice command "arm"
+  -> AlarmAutomation ON
+
+Voice command "silence"
+  -> Relay OFF
+  -> Buzzer OFF
+
+Voice command "disarm_code"
+  -> optional convenience disarm, with clear security limitations
+```
+
+Planned MQTT topic:
+
+```text
+tele/safety_voice_1/COMMAND
+```
+
+Example payload:
+
+```json
+{
+  "command": "arm",
+  "confidence": 0.91,
+  "inference_ms": 22,
+  "model": "voice_cmd_v1_int8"
+}
+```
+
 ## UI Layout Direction
 
 The final Basic UI should group values by physical node instead of mixing all sensors into one generic frame.

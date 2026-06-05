@@ -33,9 +33,21 @@ The current notebook is:
 notebooks/sound_classification_comparison.ipynb
 ```
 
-Run it on the laptop first. It downloads a small audio dataset, trains a regular TensorFlow model, converts it to TensorFlow Lite, quantizes it to int8, and compares size/accuracy/inference time.
+Run it on the laptop or in Colab first. It downloads an audio dataset, trains a regular TensorFlow model, converts it to TensorFlow Lite, quantizes it to int8, and compares size/accuracy/inference time.
 
-The real ESP32 + INMP441 microphone is not required for this notebook. The regular model is a laptop baseline and does not need to fit on the microcontroller. The TinyML candidate is the quantized TFLite model.
+The real ESP32 + INMP441 microphone is not required for this notebook. The regular model is a laptop/Colab baseline and does not need to fit on the microcontroller. The TinyML candidate is the quantized TFLite model.
+
+The default notebook dataset is ESC-50 with all 50 semantic classes grouped into 5 broader labels:
+
+```text
+animals
+natural_soundscape_water
+human_non_speech
+interior_domestic
+exterior_urban
+```
+
+This uses more of the dataset than a tiny hand-picked subset, while still keeping the classification task small enough for a clear TinyML comparison. If you want the smaller safety-specific subset later, change `ESC50_TASK` from `supercategories` to `safety_subset`. If the ESC-50 download is too slow, the notebook can be switched to the smaller Speech Commands fallback by changing `DATASET_MODE`.
 
 ## VS Code Kernel Setup
 
@@ -70,7 +82,7 @@ For heavier training, use Google Colab. The notebook is written so paths work bo
 
 The first code cell detects whether the notebook is running in Colab. If it is, it installs the notebook dependencies in the remote Colab runtime. If it is running locally, it does not install anything and expects the local `.venv` from the setup above.
 
-The generated model files can be downloaded from Colab and copied back into `tinyml/models/` and `tinyml/exported/`.
+The generated model files can be downloaded from Colab and copied back into `tinyml/models/` and `tinyml/exported/`. Audio files downloaded in Colab stay in the remote Colab filesystem; they will not appear automatically in the local Windows project folder.
 
 If you connect VS Code to a Colab runtime, treat the Colab runtime as the execution kernel and the local `.venv` as the local fallback/editing kernel. The notebook comparison itself is the same in both cases.
 

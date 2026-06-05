@@ -29,6 +29,9 @@ Optional TinyML items later:
 String TinyMLSoundClass "TinyML Sound Class [%s]"
 Number TinyMLSoundConfidence "TinyML Sound Confidence [%.2f]"
 Number TinyMLInferenceMs "TinyML Inference Time [%.0f ms]"
+String VoiceCommand "Voice Command [%s]"
+Number VoiceCommandConfidence "Voice Command Confidence [%.2f]"
+Number VoiceInferenceMs "Voice Inference Time [%.0f ms]"
 ```
 
 ## Current Scoring
@@ -76,6 +79,36 @@ door AND vibration
 are currently commented out, so the main alarm path is now based on calculated risk level.
 
 The analog microphone value is kept in the score for now, but it is still a weak telemetry-based sound signal. The future ESP32 TinyML audio node should become the stronger audio event source by publishing classification labels and confidence values.
+
+## Later Voice And Touch Control
+
+For a later extension, touch should become the trusted local physical override:
+
+```text
+Touch on alarm node
+  -> Relay OFF
+  -> Buzzer OFF
+  -> AlarmAutomation OFF
+  -> AlarmState IDLE
+```
+
+A second ESP32 can become a TinyML voice-command node:
+
+```text
+tele/safety_voice_1/COMMAND
+```
+
+with commands such as:
+
+```text
+arm
+silence
+disarm_code
+unknown
+silence
+```
+
+Voice commands should be convenience controls. Physical touch has higher trust than voice, because speech commands can be misrecognized or replayed.
 
 ## UI Placement
 
