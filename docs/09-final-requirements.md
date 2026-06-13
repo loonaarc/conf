@@ -8,7 +8,7 @@ The final check is graded with 30 points and uses the MoSCoW categories from the
 
 | Requirement | Category | Points | Current status | Next action |
 | --- | --- | ---: | --- | --- |
-| Project documentation, wiring plan, network plan, configuration screenshots, security documentation, openHAB config files | Must | 4 | In progress | Add wiring diagrams and finish security/config screenshots |
+| Project documentation, wiring plan, network plan, configuration screenshots, security documentation, openHAB config files | Must | 4 | Done | Wiring diagrams in evidence 34, network plan in evidence 15, security in 08-security.md, config files in things/items/rules/sitemap |
 | Implementation of 2 D1 Mini devices including actuators and sensors | Must | 1 | Done, with extra third node | Keep ESP #1 monitoring, ESP #2 alarm, ESP #3 context |
 | openHAB config via config files, not graphical UI | Must | 2 | Done | Keep `.things`, `.items`, `.rules`, `.sitemap`, `addons.cfg` |
 | Security configuration for devices, MQTT, and openHAB | Must | 3 | Documented | Capture security evidence screenshots |
@@ -22,10 +22,10 @@ The final check is graded with 30 points and uses the MoSCoW categories from the
 | Internet access to openHAB UI | Must | 1 | Done | Capture myopenHAB online evidence |
 | Short demonstration video | Should | 2 | Missing | Record final flow after UI/history is stable |
 | Additional actuators/sensors used | Should | 1 | Done | ESP #3 context node plus sound/vibration/temperature and ESP #2 touch support this |
-| Geolocation-based map | Should | 1 | Missing | Add if time remains |
+| Geolocation-based map | Should | 1 | Done | Location item + Mapview widget in sitemap, evidence 31 |
 | Persistence implementation, not default rrd4j | Should | 2 | Done | Capture JDBC/SQLite proof |
-| Customization of UI according to use case | Should | 2 | Done/in progress | Per-node sitemap is implemented; final screenshot still needed |
-| Additional MainUI page or HABPanel | Could | 2 | Missing | Optional dashboard if time remains |
+| Customization of UI according to use case | Should | 2 | Done | Per-node sitemap frames implemented, MainUI safety dashboard added, evidence 11 and 32 |
+| Additional MainUI page or HABPanel | Could | 2 | Done | Safety Dashboard page created in MainUI, evidence 32 |
 | Extra effort | Could | 2 | In progress | Risk scoring and TinyML extension can support this |
 
 ## Should/Could-Have Direction

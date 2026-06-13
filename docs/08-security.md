@@ -150,15 +150,14 @@ This is one of the strongest privacy arguments for the TinyML extension.
 | Device outage invisible | MQTT LWT shown in openHAB UI | Keep LWT and alert on offline nodes |
 | Stored history data | Local SQLite database | Protect database and host account |
 
-## Evidence To Capture
+## Evidence Captured
 
-Recommended evidence screenshots:
+| Evidence | File | Description |
+| --- | --- | --- |
+| 23 | `docs/evidence/23-mosquitto-local-broker-config.png` | Local Mosquitto broker config showing anonymous access and port 1883 |
+| 24 | `docs/evidence/24-tasmota-mqtt-config-safety-monitor.png` | Tasmota MQTT configuration for the monitoring node |
+| 25 | `docs/evidence/25-openhab-local-ui-access.png` | openHAB local UI access via localhost |
+| 26 | `docs/evidence/26-myopenhab-remote-access-online.png` | Remote access via myopenHAB Cloud Connector |
+| 27 | `docs/evidence/27-myopenhab-remote-basic-ui.png` | Project sitemap opened remotely through myopenHAB |
 
-```text
-docs/evidence/23-mosquitto-local-broker-config.png
-docs/evidence/24-tasmota-mqtt-config-safety-monitor.png
-docs/evidence/25-openhab-local-ui-access.png
-docs/evidence/26-myopenhab-remote-access-online.png
-```
-
-Avoid screenshots that reveal real passwords. If a screenshot contains a password field, crop or obscure it before adding it to the project evidence.
+No passwords are visible in any of the evidence screenshots.

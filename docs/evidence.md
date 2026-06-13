@@ -396,6 +396,45 @@ Figure 31 shows the geolocation map widget in the openHAB Basic UI. A `Location`
 
 Figure 32 shows the custom Safety Dashboard page created in the openHAB MainUI. It displays live values from four Items: RiskLevel (LOW), AlarmState (IDLE), RiskScore (1), and Temperature (26.9°C). The dashboard is separate from the file-based Basic UI sitemap and satisfies the additional MainUI page requirement.
 
+## 33. ESP32 Audio Node: INMP441 Wiring Photo
+
+![ESP32 INMP441 wiring](evidence/33-esp32-inmp441-wiring.png)
+
+Figure 33 shows the ESP32 Dev Module connected to the INMP441 I2S microphone on a breadboard. The verified wiring is:
+
+```text
+INMP441 VDD -> ESP32 3V3
+INMP441 GND -> ESP32 GND
+INMP441 L/R -> ESP32 GND
+INMP441 SCK -> ESP32 D14 / GPIO14
+INMP441 WS  -> ESP32 D15 / GPIO15
+INMP441 SD  -> ESP32 D32 / GPIO32
+```
+
+This is the hardware base for the TinyML audio node running sketch `04_mqtt_features` and the planned `05_tinyml_inference`.
+
+## 34. EasyEDA Wiring Plan: All Three D1 Mini Nodes
+
+![EasyEDA wiring plan for all three D1 Mini nodes](evidence/34-easyeda-wiring-plan.png)
+
+Figure 34 shows the schematic wiring plan for all three Tasmota D1 Mini nodes drawn in EasyEDA. Each node is represented as a Wemos D1 Mini symbol with its connected sensor or actuator modules:
+
+ESP1 Monitor:
+- HC-SR501 PIR motion sensor → D2 / GPIO4 (Switch1)
+- KY-025 Reed switch → D6 / GPIO12 (Switch2)
+
+ESP2 Alarm:
+- Buzzer → D5 / GPIO14 (PWM1)
+- SRD-05VDC relay → D1 / GPIO5 (Relay1)
+- TTP223 touch sensor → D2 / GPIO4 (Switch1)
+
+ESP3 Context:
+- KY-037 sound sensor → A0 / GPIO17 (ADC analog input)
+- DS18B20 temperature sensor → D5 / GPIO14 (DS18x20)
+- SW-420 vibration sensor → D1 / GPIO5 (Switch1)
+
+Each sensor module is shown with its VCC, GND, and signal connections. VCC and GND power symbols are shared across the schematic as global nets.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
@@ -417,7 +456,7 @@ The final proof chain for the recorded demo is:
 14. Optional ESP32 TinyML audio-node hardware test proves local I2S microphone capture
 15. Optional ESP32 audio feature sketch proves local feature extraction before MQTT/TinyML integration
 16. Optional ESP32 MQTT audio feature publishing proves the full ESP32 -> Wi-Fi -> MQTT -> broker pipeline for the audio node
-16. openHAB automation is disabled from the Basic UI
+17. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:

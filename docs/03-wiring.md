@@ -1,5 +1,17 @@
 # Wiring Guide
 
+## Schematic Wiring Plan
+
+A schematic wiring plan for all three D1 Mini nodes was drawn in EasyEDA and is captured in evidence 34:
+
+```text
+docs/evidence/34-easyeda-wiring-plan.png
+```
+
+The schematic shows each node as a Wemos D1 Mini symbol with its connected sensor and actuator modules, including VCC, GND, and signal connections for each component.
+
+## Node Overview
+
 This guide documents the current hardware setup:
 
 ```text
