@@ -311,7 +311,7 @@ SwitchMode1 1
 
 ## TinyML Extension Later
 
-TinyML should not block the current build.
+TinyML should not block the current build. The ESP32 + INMP441 hardware blocker is now cleared: the ESP32 upload test works, the INMP441 is soldered/wired, and the serial I2S test shows changing `avg_abs` and `peak` values.
 
 Potential later use:
 
@@ -320,12 +320,35 @@ Potential later use:
 - sound/vibration pattern classification
 - edge inference on the safety context node
 
+Recommended audio label direction:
+
+```text
+glass_breaking
+gunshot
+explosion_or_fireworks
+impact_or_thud
+scream_or_shout
+siren_or_alarm
+footsteps
+crying_or_sobbing
+pet_noise
+weather_noise
+mechanical_noise
+household_noise
+unknown_background
+```
+
+This split should replace weaker audio-only access labels such as door knock/creak once FSD50K and UrbanSound8K are added. The reed switch already detects door open/closed more reliably than audio, so the ESP32 microphone should focus on impact, distress, alarm, weather/context, and false-positive/background classes.
+
 Possible comparison:
 
 | Model type | Purpose |
 | --- | --- |
-| TensorFlow float32 | Baseline model |
-| Quantized TensorFlow Lite | Smaller TinyML-style model |
+| Scratch TensorFlow CNN | Plain baseline trained only from selected ESC-50 labels |
+| Quantized scratch CNN | Basic TinyML baseline |
+| YAMNet transfer-learning teacher | Strong Colab/laptop model used for better soft labels |
+| Distilled student CNN | Main ESP32 candidate, trained from true labels plus YAMNet teacher probabilities |
+| Quantized distilled student | Final int8 TFLite/TFLite Micro deployment artifact |
 
 Compare:
 
@@ -333,8 +356,19 @@ Compare:
 - inference latency
 - memory usage
 - accuracy
+- confusion matrices saved as readable PNG files
+- accuracy change from scratch to teacher-assisted student
 
 TinyML should become an enhancement to the event detection layer, not a replacement for the MQTT/openHAB infrastructure.
+
+Current TinyML hardware milestone:
+
+```text
+ESP32 board profile -> ESP32 Dev Module
+Local port          -> COM3
+INMP441 wiring      -> SCK D14, WS D15, SD D32, L/R GND, VDD 3V3
+Serial proof        -> avg_abs/peak values react to sound
+```
 
 ## TinyML Debug Observability
 

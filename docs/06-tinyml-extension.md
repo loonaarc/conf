@@ -22,8 +22,18 @@ INMP441 microphone
 | Topic | `safety_audio_1` |
 | Hardware | ESP32 WROOM + INMP441 |
 | Firmware | Arduino/PlatformIO or ESP-IDF, not Tasmota |
-| Model | Quantized TensorFlow Lite / TFLite Micro audio classifier |
+| Model | Distilled quantized TensorFlow Lite / TFLite Micro audio classifier |
 | Output | Sound class, confidence, inference time |
+
+Current hardware status:
+
+```text
+ESP32 upload test: verified
+Arduino board profile: ESP32 Dev Module
+Local serial port during test: COM3
+INMP441 I2S capture: verified with changing avg_abs/peak serial output
+Working pins: SCK=D14/GPIO14, WS=D15/GPIO15, SD=D32/GPIO32, L/R=GND, VDD=3V3
+```
 
 ## Later Voice Command Node
 
@@ -94,6 +104,26 @@ Example payload:
 
 ## MQTT Payload
 
+Target deployment labels after adding ESC-50, UrbanSound8K, FSD50K, and own INMP441 recordings:
+
+```text
+glass_breaking
+gunshot
+explosion_or_fireworks
+impact_or_thud
+scream_or_shout
+siren_or_alarm
+footsteps
+crying_or_sobbing
+pet_noise
+weather_noise
+mechanical_noise
+household_noise
+unknown_background
+```
+
+Door knock and door creak can stay as optional experiments, but they are not core deployment labels because the existing reed switch already covers door state more reliably.
+
 Topic:
 
 ```text
@@ -104,11 +134,12 @@ Payload:
 
 ```json
 {
-  "label": "alarm_like",
+  "label": "glass_breaking",
+  "risk_category": "impact",
   "confidence": 0.84,
   "rms": 0.62,
   "inference_ms": 38,
-  "model": "sound_v1_int8"
+  "model": "distilled_student_int8"
 }
 ```
 
@@ -174,7 +205,7 @@ In scope:
 - MQTT summary payload
 - local or temporary debug access to raw samples and feature previews
 - integration into openHAB risk score
-- comparison with regular TensorFlow model
+- comparison with regular TensorFlow, YAMNet teacher, and distilled TinyML student models
 - later voice-command node for arming/silencing/disarm-code experiments
 
 Out of scope:
@@ -188,15 +219,16 @@ Out of scope:
 
 ## Implementation Order
 
-1. Solder and test ESP32 + INMP441.
-2. Verify I2S audio capture with a simple serial monitor sketch.
-3. Add serial debug output for sample windows, RMS/peak, and inference result.
+1. Solder and test ESP32 + INMP441. **Done**
+2. Verify I2S audio capture with a simple serial monitor sketch. **Done**
+3. Add serial debug output for stable RMS/peak, sample window stats, and later inference result.
 4. Build the notebook model comparison in `tinyml/notebooks/`.
-5. Export the quantized model to `tinyml/models/` and `tinyml/exported/`.
-6. Add ESP32 firmware under `tinyml/esp32_audio_node/`.
-7. Publish the normal MQTT classification payload.
-8. Add optional debug MQTT payloads for feature/sample previews.
-9. Add openHAB MQTT channels and Items.
-10. Add TinyML sound evidence to the risk-score rule.
-11. Later, use the second ESP32 as `safety_voice_1` for voice commands.
-12. Keep physical touch as the unconditional local disarm override.
+5. Train the YAMNet teacher and distilled compact student.
+6. Export the distilled int8 model to `tinyml/models/` and `tinyml/exported/`.
+7. Add ESP32 firmware under `tinyml/esp32_audio_node/`.
+8. Publish the normal MQTT classification payload.
+9. Add optional debug MQTT payloads for feature/sample previews.
+10. Add openHAB MQTT channels and Items.
+11. Add TinyML sound evidence to the risk-score rule.
+12. Later, use the second ESP32 as `safety_voice_1` for voice commands.
+13. Keep physical touch as the unconditional local disarm override.

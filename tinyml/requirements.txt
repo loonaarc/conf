@@ -1,4 +1,7 @@
 tensorflow>=2.15
+tensorflow-hub
+scipy
+soundfile
 numpy
 matplotlib
 scikit-learn

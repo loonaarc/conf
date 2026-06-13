@@ -364,6 +364,52 @@ The generic `POWER` topic is normal Tasmota wording, but it is confusing in this
 
 Use the blue potentiometer on the vibration module to adjust the digital threshold. The microphone is currently analog, so it should be checked by watching whether `ANALOG.A0` changes when the sound level changes.
 
+## ESP32 TinyML Audio Node
+
+The ESP32 audio node is separate from the Tasmota D1 Mini nodes. It uses custom Arduino/PlatformIO firmware because Tasmota is not the right target for running the future TinyML audio model.
+
+Current verified hardware:
+
+```text
+Board -> ESP32 Dev Module
+Port  -> COM3 during local Arduino IDE test
+Mic   -> INMP441 I2S microphone
+```
+
+Working INMP441 wiring:
+
+| INMP441 pin | ESP32 board label | GPIO used in code |
+| --- | --- | --- |
+| `VDD` | `3V3` | power |
+| `GND` | `GND` | ground |
+| `L/R` | `GND` | left channel select |
+| `SCK` | `D14` | GPIO14 |
+| `WS` | `D15` | GPIO15 |
+| `SD` | `D32` | GPIO32 |
+
+Important notes:
+
+- On this ESP32 board, labels such as `D14`, `D15`, and `D32` correspond to GPIO14, GPIO15, and GPIO32 in Arduino code.
+- All ESP32 `GND` pins are connected together, so microphone `GND` and `L/R` can use different physical GND pins.
+- `VDD` must use `3V3`, not `VIN`.
+- The `SD` line on `D32` is the microphone data line. If it is missing, the sketch can still run but will print only zeros.
+
+Verified Arduino test pins:
+
+```cpp
+#define I2S_WS 15
+#define I2S_SD 32
+#define I2S_SCK 14
+```
+
+Verified serial test result:
+
+```text
+avg_abs and peak values change when sound is made near the microphone
+```
+
+This proves that the ESP32 can be flashed, the serial monitor works, and the INMP441 sends I2S audio data to the ESP32.
+
 ## First Wiring Target
 
 Build only the monitoring node first:
@@ -422,6 +468,7 @@ ESP #3 context switch behavior: fixed with SetOption114 1 + SwitchMode1 1
 ESP #3 microphone: visible as analog telemetry under ANALOG.A0
 ESP #3 temperature: visible as DS18B20 telemetry
 ESP #3 vibration: visible in telemetry, not yet verified as clean event trigger
+ESP32 audio node: INMP441 I2S microphone test verified locally with changing avg_abs/peak serial output
 ```
 
 Important MQTT Explorer note:

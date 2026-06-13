@@ -332,6 +332,23 @@ https://myopenhab.org/basicui/app?sitemap=safety_monitor
 
 This is the relevant remote UI for the project because the implementation uses a file-based Basic UI sitemap rather than MainUI pages.
 
+## 28. ESP32 INMP441 I2S Microphone Test
+
+![alt text](image.png)
+
+Verified wiring:
+
+```text
+INMP441 VDD -> ESP32 3V3
+INMP441 GND -> ESP32 GND
+INMP441 L/R -> ESP32 GND
+INMP441 SCK -> ESP32 D14 / GPIO14
+INMP441 WS  -> ESP32 D15 / GPIO15
+INMP441 SD  -> ESP32 D32 / GPIO32
+```
+
+Figure 28 proves that the ESP32 can be flashed, the USB serial connection works, and the INMP441 microphone produces I2S audio data that reaches the ESP32.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
@@ -350,7 +367,8 @@ The final proof chain for the recorded demo is:
 11. JDBC/SQLite persistence stores selected Item history
 12. Basic UI history charts display RiskScore, Temperature, and SoundLevel
 13. myopenHAB provides remote access without direct public port forwarding
-14. openHAB automation is disabled from the Basic UI
+14. Optional ESP32 TinyML audio-node hardware test proves local I2S microphone capture
+15. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:

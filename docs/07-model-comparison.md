@@ -4,32 +4,71 @@ This document defines the Wahlfachprojekt comparison. The comparison should be s
 
 ## Research Question
 
-How does a regular TensorFlow audio classifier differ from a quantized TinyML/TFLite version when both solve the same small sound-classification task?
+How can a strong regular audio model help train a compact quantized TinyML model that can run on the ESP32 audio node?
 
 ## Task
 
-Classify short audio windows into a small number of classes.
+Classify short audio windows into selected real sound-event classes that fit the safety-monitoring story.
 
-Candidate classes for the later real safety dataset:
+The notebook uses ESC-50 automatically and can add UrbanSound8K and FSD50K when those audio folders are present. This keeps the first run reproducible while supporting the more useful final label split with gunshot, thud, screaming, alarm, and mechanical false-positive classes.
 
-```text
-silence
-normal_noise
-clap_or_knock
-alarm_like
-```
+### Target Multi-Dataset Deployment Split
 
-The prepared notebook currently uses ESC-50 and groups all 50 semantic sound classes into the 5 broader categories commonly used to describe the dataset:
+The current notebook target labels are:
 
 ```text
-animals
-natural_soundscape_water
-human_non_speech
-interior_domestic
-exterior_urban
+glass_breaking
+gunshot
+explosion_or_fireworks
+impact_or_thud
+scream_or_shout
+siren_or_alarm
+footsteps
+crying_or_sobbing
+pet_noise
+weather_noise
+mechanical_noise
+household_noise
+unknown_background
 ```
 
-This is the default because it takes advantage of the whole ESC-50 dataset instead of using only a few hand-picked classes. For a more directly safety-themed second run, the notebook also has `ESC50_TASK = 'safety_subset'`, which groups selected classes into labels such as `siren_alarm` and `impact_or_glass`. If ESC-50 is too slow to download, the notebook still has a smaller Speech Commands fallback mode.
+This version removes weak access-context labels such as door knock and door creak from the core deployment target. They are not useless, but they are less important than impact, distress, alarm, and false-positive classes. Door contact is already covered better by the reed switch in the IoT system, while audio should focus on events the existing sensors cannot see.
+
+Useful verified source labels:
+
+| Target label | Dataset labels to use |
+| --- | --- |
+| `glass_breaking` | ESC-50 `glass_breaking`; FSD50K `Glass`, `Shatter` |
+| `gunshot` | UrbanSound8K `gun_shot`; FSD50K `Gunshot_and_gunfire` |
+| `explosion_or_fireworks` | ESC-50 `fireworks`; FSD50K `Explosion`, `Fireworks` |
+| `impact_or_thud` | FSD50K `Thump_and_thud`, `Boom`, `Slam`, `Crack`, `Hammer` |
+| `scream_or_shout` | FSD50K `Screaming`, `Shout`, `Yell` |
+| `siren_or_alarm` | ESC-50 `siren`, `clock_alarm`; UrbanSound8K `siren`; FSD50K `Siren`, `Alarm`, `Doorbell`, `Ringtone` |
+| `footsteps` | ESC-50 `footsteps`; FSD50K `Walk_and_footsteps` |
+| `crying_or_sobbing` | ESC-50 `crying_baby`; FSD50K `Crying_and_sobbing` |
+| `pet_noise` | ESC-50 `dog`, `cat`; UrbanSound8K `dog_bark`; FSD50K `Dog`, `Bark`, `Cat`, `Meow`, `Purr` |
+| `weather_noise` | ESC-50 `rain`, `thunderstorm`, `water_drops`, `wind`; FSD50K `Rain`, `Raindrop`, `Thunder`, `Thunderstorm`, `Wind` |
+| `mechanical_noise` | UrbanSound8K `drilling`, `jackhammer`, `engine_idling`; FSD50K `Drill`, `Power_tool`, `Sawing`, `Tools`, `Mechanical_fan` |
+| `household_noise` | ESC-50 `vacuum_cleaner`, `washing_machine`, `clock_tick`; FSD50K `Domestic_sounds_and_home_sounds`, `Dishes_and_pots_and_pans`, `Cupboard_open_or_close`, `Drawer_open_or_close`, `Microwave_oven`, `Computer_keyboard`, `Typing` |
+| `unknown_background` | non-target ESC-50/FSD50K/UrbanSound8K classes and own normal-room recordings |
+
+The model predicts the actual acoustic event class. The ESP32 firmware or openHAB rules later map that class to a risk category. This avoids training the model on categories that are semantically useful but acoustically inconsistent.
+
+Example later mapping:
+
+```text
+glass_breaking -> impact -> higher risk
+gunshot -> critical_impulse -> critical risk
+explosion_or_fireworks -> explosive_context -> medium/high risk depending on context
+impact_or_thud -> impact -> medium/high risk depending on confidence
+scream_or_shout -> distress -> high risk
+siren_or_alarm -> alarm_context -> medium/high risk depending on confidence
+weather_noise -> weather_context -> low risk modifier
+pet_noise -> ignore_or_low -> no direct alarm
+unknown_background -> ignore -> no direct alarm
+```
+
+The class-to-risk mapping is not part of model training. It belongs in firmware/openHAB logic so that risk policy can change without retraining the model.
 
 ## Notebook
 
@@ -57,33 +96,47 @@ Colab kernel -> install packages in the remote Colab runtime
 Local VS Code .venv kernel -> use the already installed local requirements
 ```
 
+For Colab dataset setup:
+
+```text
+UrbanSound8K -> downloaded automatically by the notebook setup cell
+FSD50K -> upload/extract audio to Google Drive at My Drive/tinyml_datasets/FSD50K/
+```
+
+The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD50K` when running in Colab. The FSD50K metadata zip is small and downloaded automatically; only the large audio files need to be provided.
+
 The notebook contains:
 
 1. Dataset loading or dataset preparation.
 2. Feature extraction with log-mel spectrograms.
 3. Regular TensorFlow/Keras model training as the laptop baseline.
 4. Training curves for checking underfitting or overfitting.
-5. Evaluation with accuracy and confusion matrices for both regular and TinyML models.
+5. Evaluation with accuracy and readable saved confusion matrices.
 6. TensorFlow Lite conversion.
 7. Int8 quantization as the TinyML-style model.
-8. Model-size comparison.
-9. Summary table for regular vs TinyML.
+8. YAMNet transfer-learning teacher with pretrained audio embeddings.
+9. Distilled compact student model trained from hard labels and YAMNet soft probabilities.
+10. Int8 quantization of the distilled student as the ESP32 candidate.
+11. Model-size comparison.
+12. Summary table for scratch, teacher, student, and quantized student results.
 
-The baseline should be reasonably meaningful before the TinyML comparison is interpreted. If regular TensorFlow accuracy is only slightly above chance, the conclusion should be that the feature/model setup is weak, not that TinyML itself is unsuitable. The current notebook therefore uses log-mel features and a stronger compact CNN instead of the first quick raw-spectrogram baseline.
+The baseline should be reasonably meaningful before the TinyML comparison is interpreted. With the current 13 model labels, chance accuracy is about 7.7%. If regular TensorFlow accuracy is only slightly above chance, or if the confusion matrix shows that nearly all samples are predicted as one class, the conclusion should be that the feature/model setup is weak, not that TinyML itself is unsuitable. The current notebook therefore uses log-mel features, prints true/predicted label distributions, saves readable confusion-matrix PNGs, includes a YAMNet teacher, and adds a distilled student model as the ESP32 candidate.
 
 ## Comparison Table
 
-| Metric | Regular TensorFlow | TinyML / TFLite int8 |
-| --- | --- | --- |
-| Target device | Laptop / Colab | ESP32 |
-| Numeric format | float32 | int8 |
-| Model size | TBD | TBD |
-| Accuracy | TBD | TBD |
-| Confusion matrix | TBD | TBD |
-| Inference time | TBD | TBD |
-| Memory constraint | Low relevance | Important |
-| Data sent to openHAB | optional raw/central data | label/confidence only |
-| Debug data access | direct notebook arrays/plots | serial monitor or temporary debug MQTT |
+| Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
+| --- | --- | --- | --- |
+| Target device | Laptop / Colab | Laptop / Colab training reference | ESP32 candidate |
+| Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
+| Model size | TBD | TBD | TBD |
+| Accuracy | TBD | TBD | TBD |
+| Confusion matrix | TBD | TBD | TBD |
+| Inference time | TBD | TBD | TBD |
+| Memory constraint | Low relevance | Too large/heavy for direct ESP32 WROOM deployment | Important |
+| Data sent to openHAB | optional raw/central data | not deployed | label/confidence only |
+| Debug data access | direct notebook arrays/plots | direct notebook arrays/plots | serial monitor or temporary debug MQTT |
+
+The YAMNet result is not the ESP32 deployment target. It is the teacher/reference model. The deployable result is the distilled compact student converted to int8 TFLite.
 
 ## Expected Interpretation
 
@@ -96,19 +149,20 @@ Commonalities:
 
 Differences:
 
-- TinyML model must fit into microcontroller memory
+- TinyML student model must fit into microcontroller memory
 - quantization reduces size and may reduce accuracy
 - inference runs locally on the ESP32
 - MQTT publishes only summarized results
 - local inference improves privacy and reduces bandwidth
 - raw microphone samples can still be inspected during development through serial output or temporary debug topics
+- teacher-assisted training can improve the small model without deploying the teacher
 
 Important interpretation:
 
 ```text
-The regular model does not need to fit on the microcontroller.
-It is the baseline used to show what changes when the same task is compressed into a TinyML/TFLite form.
-The deployable edge version is the quantized TFLite/TFLite Micro style model.
+The regular/YAMNet models do not need to fit on the microcontroller.
+They are training references used to improve and evaluate the compact student.
+The deployable edge version is the distilled int8 TFLite/TFLite Micro style model.
 ```
 
 ## Artifacts To Produce
@@ -117,7 +171,11 @@ The deployable edge version is the quantized TFLite/TFLite Micro style model.
 tinyml/models/regular_model.keras
 tinyml/models/regular_model_float32.tflite
 tinyml/models/tiny_model_int8.tflite
-tinyml/exported/tiny_model_int8.cc
+tinyml/models/distilled_student_model.keras
+tinyml/models/distilled_student_float32.tflite
+tinyml/models/distilled_student_int8.tflite
+tinyml/exported/distilled_student_int8.cc
+tinyml/exported/figures/*.png
 ```
 
 The `.keras`, `.tflite`, and exported `.cc` files are generated by the notebook.
