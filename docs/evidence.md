@@ -390,6 +390,12 @@ This proves that the ESP32 audio node connects to Wi-Fi, establishes an MQTT con
 
 Figure 31 shows the geolocation map widget in the openHAB Basic UI. A `Location` item (`MonitoredArea`) is initialized on system startup with the coordinates of the monitored site in Vienna (`48.2082, 16.3738`). The map pin confirms that the monitored area is registered and visible in the UI. This satisfies the geolocation-based map requirement.
 
+## 32. openHAB MainUI: Safety Dashboard Page
+
+![openHAB MainUI Safety Dashboard](evidence/32-openhab-mainui-safety-dashboard.png)
+
+Figure 32 shows the custom Safety Dashboard page created in the openHAB MainUI. It displays live values from four Items: RiskLevel (LOW), AlarmState (IDLE), RiskScore (1), and Temperature (26.9°C). The dashboard is separate from the file-based Basic UI sitemap and satisfies the additional MainUI page requirement.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:
