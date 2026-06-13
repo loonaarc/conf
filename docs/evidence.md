@@ -384,6 +384,12 @@ Example payloads:
 
 This proves that the ESP32 audio node connects to Wi-Fi, establishes an MQTT connection to the Mosquitto broker, and publishes structured audio feature data. The `audio_state` field switches correctly between `quiet` and `sound` in response to real microphone input. This is the debug feature topic used during development. The final deployment topic will be `tele/safety_audio_1/CLASSIFICATION` once the TinyML model is deployed on the ESP32.
 
+## 31. openHAB Basic UI: Geolocation Map
+
+![openHAB Basic UI geolocation map](evidence/31-openhab-geolocation-map.png)
+
+Figure 31 shows the geolocation map widget in the openHAB Basic UI. A `Location` item (`MonitoredArea`) is initialized on system startup with the coordinates of the monitored site in Vienna (`48.2082, 16.3738`). The map pin confirms that the monitored area is registered and visible in the UI. This satisfies the geolocation-based map requirement.
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:

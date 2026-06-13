@@ -121,3 +121,11 @@ then
         BuzzerCommand.sendCommand(level.intValue)
     }
 end
+
+// Rule to initialize the monitored area location on system startup. This sets a default location that can be displayed in the UI and used in rules if needed.
+rule "Initialize Monitored Area Location"
+when
+    System started
+then
+    MonitoredArea.postUpdate("48.2082,16.3738")
+end

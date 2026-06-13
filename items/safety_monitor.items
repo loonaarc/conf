@@ -66,3 +66,7 @@ Number AustriaWarningCount "Active Weather Warnings [%.0f]" { channel="http:url:
 Number AustriaWarningLevel "Warning Level [%.0f]" { channel="http:url:geosphere_warnings:firstWarningLevel" }
 
 String AustriaWarningText "Warning Text [%s]" { channel="http:url:geosphere_warnings:firstWarningText" }
+
+
+// This is a local item that can be used to display the monitored area in the UI. It is not linked to any MQTT channel or external data source.
+Location MonitoredArea "Monitored Area"

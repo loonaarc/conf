@@ -83,4 +83,11 @@ sitemap safety_monitor label="Safety Monitor"
         Chart item=Temperature label="Temperature history" period=h refresh=10000 service="jdbc"
         Chart item=SoundLevel label="Sound level history" period=h refresh=10000 service="jdbc"
     }
+
+    // Map frame shows the monitored area on a map. This uses a local Location item that is not linked to MQTT or external data; it can be set manually in the UI or via rules.
+    Frame label="Location"
+    {
+        Mapview item=MonitoredArea label="Monitored area" height=10
+    }
+
 }
