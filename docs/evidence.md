@@ -366,7 +366,7 @@ This proves that the ESP32 can already reduce raw microphone samples into summar
 
 ## 30. ESP32 MQTT Audio Feature Publishing
 
-![alt text](image.png)
+![ESP32 MQTT audio feature publishing](evidence/30-esp32-mqtt-features-serial.png)
 
 Figure 30 shows the Arduino IDE Serial Monitor output from sketch `04_mqtt_features`. The ESP32 captures I2S audio, computes RMS and peak values, and publishes a JSON payload to the MQTT broker once per second:
 
