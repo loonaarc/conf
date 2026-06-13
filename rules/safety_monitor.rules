@@ -37,6 +37,7 @@ then
         }
     }
 
+
     if (AustriaWarningCount.state != NULL && AustriaWarningCount.state != UNDEF) {
         val Number warningCount = AustriaWarningCount.state as Number
         if (warningCount.intValue > 0) {

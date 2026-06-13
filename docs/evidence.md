@@ -334,7 +334,7 @@ This is the relevant remote UI for the project because the implementation uses a
 
 ## 28. ESP32 INMP441 I2S Microphone Test
 
-![alt text](image.png)
+![ESP32 INMP441 I2S serial test](evidence/28-esp32-inmp441-i2s-serial-test.png)
 
 Verified wiring:
 
@@ -348,6 +348,41 @@ INMP441 SD  -> ESP32 D32 / GPIO32
 ```
 
 Figure 28 proves that the ESP32 can be flashed, the USB serial connection works, and the INMP441 microphone produces I2S audio data that reaches the ESP32.
+
+## 29. ESP32 Audio Feature Serial Test
+
+![ESP32 audio feature serial test](evidence/29-esp32-audio-features-serial-test.png)
+
+Figure 29 shows the second ESP32 audio debug sketch. It computes a small feature summary from each I2S audio buffer:
+
+```text
+samples_read=512
+rms=...
+peak=...
+audio_state=quiet/sound
+```
+
+This proves that the ESP32 can already reduce raw microphone samples into summarized audio features. That is the same design principle planned for the final TinyML node: openHAB should receive compact summaries, not raw audio.
+
+## 30. ESP32 MQTT Audio Feature Publishing
+
+![alt text](image.png)
+
+Figure 30 shows the Arduino IDE Serial Monitor output from sketch `04_mqtt_features`. The ESP32 captures I2S audio, computes RMS and peak values, and publishes a JSON payload to the MQTT broker once per second:
+
+```text
+tele/safety_audio_1/FEATURES
+```
+
+Example payloads:
+
+```json
+{"rms":3062.7,"peak":65537,"audio_state":"sound","samples_read":512}
+{"rms":90.6,"peak":2049,"audio_state":"quiet","samples_read":512}
+{"rms":5464.1,"peak":104719,"audio_state":"sound","samples_read":512}
+```
+
+This proves that the ESP32 audio node connects to Wi-Fi, establishes an MQTT connection to the Mosquitto broker, and publishes structured audio feature data. The `audio_state` field switches correctly between `quiet` and `sound` in response to real microphone input. This is the debug feature topic used during development. The final deployment topic will be `tele/safety_audio_1/CLASSIFICATION` once the TinyML model is deployed on the ESP32.
 
 ## Evidence Chain
 
@@ -368,7 +403,9 @@ The final proof chain for the recorded demo is:
 12. Basic UI history charts display RiskScore, Temperature, and SoundLevel
 13. myopenHAB provides remote access without direct public port forwarding
 14. Optional ESP32 TinyML audio-node hardware test proves local I2S microphone capture
-15. openHAB automation is disabled from the Basic UI
+15. Optional ESP32 audio feature sketch proves local feature extraction before MQTT/TinyML integration
+16. Optional ESP32 MQTT audio feature publishing proves the full ESP32 -> Wi-Fi -> MQTT -> broker pipeline for the audio node
+16. openHAB automation is disabled from the Basic UI
 ```
 
 The external safety-context proof chain is:
