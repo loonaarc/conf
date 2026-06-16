@@ -12,9 +12,7 @@ Classify short audio windows into selected real sound-event classes that fit the
 
 The notebook uses ESC-50 automatically and can add UrbanSound8K and FSD50K when those audio folders are present. This keeps the first run reproducible while supporting the more useful final label split with gunshot, thud, screaming, alarm, and mechanical false-positive classes.
 
-### Target Multi-Dataset Deployment Split
-
-The current notebook target labels are:
+### Target Labels (v6+, 12 classes)
 
 ```text
 glass_breaking
@@ -28,122 +26,118 @@ crying_or_sobbing
 pet_noise
 weather_noise
 mechanical_noise
-household_noise
 unknown_background
 ```
 
-This version removes weak access-context labels such as door knock and door creak from the core deployment target. They are not useless, but they are less important than impact, distress, alarm, and false-positive classes. Door contact is already covered better by the reed switch in the IoT system, while audio should focus on events the existing sensors cannot see.
+`household_noise` was dissolved into `unknown_background` in v6 because household sounds are acoustically inconsistent as a single class and the category had weak performance. `unknown_background` is an explicit escape valve — events the model does not recognise are labeled there rather than forced into a wrong safety-relevant class. Risk scores are assigned per-category in firmware/openHAB, not in the model, so keeping `impact_or_thud` clean (no household slams mixed in) is essential.
 
-Useful verified source labels:
+Useful verified source labels (v7):
 
 | Target label | Dataset labels to use |
 | --- | --- |
-| `glass_breaking` | ESC-50 `glass_breaking`; FSD50K `Glass`, `Shatter` |
+| `glass_breaking` | ESC-50 `glass_breaking`; FSD50K `Glass`, `Shatter`, `Chink_and_clink` |
 | `gunshot` | UrbanSound8K `gun_shot`; FSD50K `Gunshot_and_gunfire` |
-| `explosion_or_fireworks` | ESC-50 `fireworks`; FSD50K `Explosion`, `Fireworks` |
-| `impact_or_thud` | FSD50K `Thump_and_thud`, `Boom`, `Slam`, `Crack`, `Hammer` |
-| `scream_or_shout` | FSD50K `Screaming`, `Shout`, `Yell` |
+| `explosion_or_fireworks` | ESC-50 `fireworks`; FSD50K `Explosion`, `Fireworks`, `Boom` |
+| `impact_or_thud` | FSD50K `Thump_and_thud`, `Crack`, `Hammer` |
+| `scream_or_shout` | FSD50K `Screaming`, `Shout`, `Yell`, `Screech` |
 | `siren_or_alarm` | ESC-50 `siren`, `clock_alarm`; UrbanSound8K `siren`; FSD50K `Siren`, `Alarm`, `Doorbell`, `Ringtone` |
-| `footsteps` | ESC-50 `footsteps`; FSD50K `Walk_and_footsteps` |
+| `footsteps` | ESC-50 `footsteps`; FSD50K `Walk_and_footsteps`, `Run` |
 | `crying_or_sobbing` | ESC-50 `crying_baby`; FSD50K `Crying_and_sobbing` |
-| `pet_noise` | ESC-50 `dog`, `cat`; UrbanSound8K `dog_bark`; FSD50K `Dog`, `Bark`, `Cat`, `Meow`, `Purr` |
-| `weather_noise` | ESC-50 `rain`, `thunderstorm`, `water_drops`, `wind`; FSD50K `Rain`, `Raindrop`, `Thunder`, `Thunderstorm`, `Wind` |
-| `mechanical_noise` | UrbanSound8K `drilling`, `jackhammer`, `engine_idling`; FSD50K `Drill`, `Power_tool`, `Sawing`, `Tools`, `Mechanical_fan` |
-| `household_noise` | ESC-50 `vacuum_cleaner`, `washing_machine`, `clock_tick`; FSD50K `Domestic_sounds_and_home_sounds`, `Dishes_and_pots_and_pans`, `Cupboard_open_or_close`, `Drawer_open_or_close`, `Microwave_oven`, `Computer_keyboard`, `Typing` |
-| `unknown_background` | non-target ESC-50/FSD50K/UrbanSound8K classes and own normal-room recordings |
+| `pet_noise` | ESC-50 `dog`, `cat`; UrbanSound8K `dog_bark`; FSD50K `Dog`, `Bark`, `Cat`, `Meow`, `Purr`, `Growling`, `Domestic_animals_and_pets` |
+| `weather_noise` | ESC-50 `rain`, `thunderstorm`, `water_drops`, `wind`, `sea_waves`; FSD50K `Rain`, `Raindrop`, `Thunder`, `Thunderstorm`, `Wind`, `Stream`, `Ocean`, `Waves_and_surf` |
+| `mechanical_noise` | ESC-50 `chainsaw`, `engine`, `helicopter`, `train`, `airplane`; UrbanSound8K `drilling`, `jackhammer`, `engine_idling`; FSD50K `Drill`, `Power_tool`, `Sawing`, `Tools`, `Mechanical_fan`, `Engine`, `Motor_vehicle_(road)`, `Aircraft`, `Motorcycle`, `Bus`, `Truck`, `Train`, `Rail_transport`, `Idling`, `Vehicle` |
+| `unknown_background` | ESC-50 `vacuum_cleaner`, `washing_machine`, `clock_tick`, `laughing`, `clapping`; FSD50K `Domestic_sounds_and_home_sounds`, `Cupboard_open_or_close`, `Drawer_open_or_close`, `Microwave_oven`, `Computer_keyboard`, `Typing`, `Speech`, `Music`, `Laughter`, `Chatter`, `Crowd`, `Clapping`, `Applause`, `Singing`, `Slam`, `Knock`, `Telephone`, `Water`, `Hiss`, `Giggle`, `Cheering`; UrbanSound8K `air_conditioner`, `car_horn`, `street_music` |
 
-The model predicts the actual acoustic event class. The ESP32 firmware or openHAB rules later map that class to a risk category. This avoids training the model on categories that are semantically useful but acoustically inconsistent.
+The model predicts the acoustic event class. The ESP32 firmware or openHAB rules later map that class to a risk category. This avoids training the model on categories that are semantically useful but acoustically inconsistent.
 
 Example later mapping:
 
 ```text
-glass_breaking -> impact -> higher risk
-gunshot -> critical_impulse -> critical risk
-explosion_or_fireworks -> explosive_context -> medium/high risk depending on context
-impact_or_thud -> impact -> medium/high risk depending on confidence
-scream_or_shout -> distress -> high risk
-siren_or_alarm -> alarm_context -> medium/high risk depending on confidence
-weather_noise -> weather_context -> low risk modifier
-pet_noise -> ignore_or_low -> no direct alarm
-unknown_background -> ignore -> no direct alarm
+glass_breaking          -> critical_impulse  -> high risk
+gunshot                 -> critical_impulse  -> critical risk
+explosion_or_fireworks  -> explosive_context -> medium/high risk depending on context
+impact_or_thud          -> impact            -> medium/high risk depending on confidence
+scream_or_shout         -> distress          -> high risk
+siren_or_alarm          -> alarm_context     -> medium/high risk depending on confidence
+weather_noise           -> weather_context   -> low risk modifier
+pet_noise               -> ignore_or_low     -> no direct alarm
+unknown_background      -> ignore            -> no direct alarm
 ```
 
 The class-to-risk mapping is not part of model training. It belongs in firmware/openHAB logic so that risk policy can change without retraining the model.
 
 ## Notebook
 
-The prepared notebook is:
+The prepared notebook is at:
 
 ```text
-tinyml/notebooks/sound_classification_comparison.ipynb
+tinyml/notebooks/sound_classification_v7.ipynb
 ```
 
-It uses a laptop/Colab-side audio dataset first. This means the comparison is not blocked by soldering the INMP441 microphone. A laptop microphone can be added later for calibration or extra experiments, but the main comparison should use a fixed dataset so the results are reproducible.
+It uses a laptop/Colab-side audio dataset. This means the comparison is not blocked by soldering the INMP441 microphone. A laptop microphone can be added later for calibration or extra experiments, but the main comparison uses a fixed dataset so results are reproducible.
 
-The intended development setup is:
+Development setup:
 
 ```text
 VS Code + local .venv kernel for editing/light runs
-Google Colab runtime for heavier TensorFlow training if needed
+Google Colab runtime for heavier TensorFlow training
 ```
 
-The local kernel is documented in `tinyml/README.md` as `Safety TinyML (.venv)`. The Colab route uses the same notebook, so results and generated model artifacts remain comparable.
-
-The first notebook cell detects the execution environment:
-
-```text
-Colab kernel -> install packages in the remote Colab runtime
-Local VS Code .venv kernel -> use the already installed local requirements
-```
+The local kernel is documented in `tinyml/README.md` as `Safety TinyML (.venv)`. The Colab route uses the same notebook, so results and generated artifacts remain comparable.
 
 For Colab dataset setup:
 
 ```text
 UrbanSound8K -> downloaded automatically by the notebook setup cell
-FSD50K -> upload/extract audio to Google Drive at My Drive/tinyml_datasets/FSD50K/
+FSD50K       -> upload/extract audio to Google Drive at My Drive/tinyml_datasets/FSD50K/
 ```
 
 The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD50K` when running in Colab. The FSD50K metadata zip is small and downloaded automatically; only the large audio files need to be provided.
 
-The notebook contains:
-
-1. Dataset loading or dataset preparation.
-2. Feature extraction with log-mel spectrograms.
-3. Regular TensorFlow/Keras model training as the laptop baseline.
-4. Training curves for checking underfitting or overfitting.
-5. Evaluation with accuracy and readable saved confusion matrices.
-6. TensorFlow Lite conversion.
-7. Int8 quantization as the TinyML-style model.
-8. YAMNet transfer-learning teacher with pretrained audio embeddings.
-9. Distilled compact student model trained from hard labels and YAMNet soft probabilities.
-10. Int8 quantization of the distilled student as the ESP32 candidate.
-11. Model-size comparison.
-12. Summary table for scratch, teacher, student, and quantized student results.
-
-The baseline should be reasonably meaningful before the TinyML comparison is interpreted. With the current 13 model labels, chance accuracy is about 7.7%. If regular TensorFlow accuracy is only slightly above chance, or if the confusion matrix shows that nearly all samples are predicted as one class, the conclusion should be that the feature/model setup is weak, not that TinyML itself is unsuitable. The current notebook therefore uses log-mel features, prints true/predicted label distributions, saves readable confusion-matrix PNGs, includes a YAMNet teacher, and adds a distilled student model as the ESP32 candidate.
-
 ## Comparison Table
+
+Results from the best run to date (v5 student, v6 teacher; v7 in progress).
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
 | Target device | Laptop / Colab | Laptop / Colab training reference | ESP32 candidate |
 | Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
-| Model size | TBD | TBD | TBD |
-| Accuracy | TBD | TBD | TBD |
-| Confusion matrix | TBD | TBD | TBD |
-| Inference time | TBD | TBD | TBD |
-| Memory constraint | Low relevance | Too large/heavy for direct ESP32 WROOM deployment | Important |
-| Data sent to openHAB | optional raw/central data | not deployed | label/confidence only |
-| Debug data access | direct notebook arrays/plots | direct notebook arrays/plots | serial monitor or temporary debug MQTT |
+| Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **41 KB** |
+| Test accuracy | 60.2% (float32) / 60.1% (int8) | 74.2% | **57.3%** (int8) |
+| Confusion matrix | Saved as PNG | Saved as PNG | Saved as PNG |
+| Inference time | ~5.7 ms/window (laptop) | N/A | ~0.3 ms/window (ESP32 est.) |
+| Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
+| Data sent to openHAB | optional raw/central | not deployed | label + confidence only |
+| Debug data access | notebook arrays/plots | notebook arrays/plots | serial monitor or debug MQTT |
 
-The YAMNet result is not the ESP32 deployment target. It is the teacher/reference model. The deployable result is the distilled compact student converted to int8 TFLite.
+Chance accuracy with 12 classes is 8.3%. The YAMNet teacher result is not the ESP32 deployment target — it is the reference model whose soft probability output guides student training. The deployable result is the distilled compact student converted to int8 TFLite.
+
+## Version Training History
+
+Each version is a separate notebook. Key changes and their measured impact on distilled student int8 test accuracy:
+
+| Version | Labels | Key Change | Regular | Teacher | Student int8 | Student size | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| v2 | 13 | Initial student: 32/64/96 SeparableConv, T=5.0, alpha=0.35 | 47.9% | 63.9% | 43.5% | 41 KB | Baseline |
+| v3 | 13 | SpecAugment on regular model; 70/15/15 random split | 60.2% | 76.6% | 40.0% | 41 KB | SpecAugment improved regular model but broke distillation: masked student input vs full-spectrogram teacher soft labels caused loss 16.5 (vs 6.3 in v2) |
+| v4 | 13 | FSD50K full 51K-file extraction; Gaussian noise replaces SpecAugment for student augmentation | 57.6% | 74.2% | 13.4% | 41 KB | Class weights from imbalanced regular dataset applied to balanced distillation split — scream weight 14.7×, student collapsed to predicting scream for 430/1455 test examples |
+| v5 | 13 | Uniform weights in distillation; T=3.0 (down from 5.0) | 60.2% | 74.2% | **57.3%** | 41 KB | Fixed weight collapse; best student result to date |
+| v6 | 12 | `household_noise` dissolved; two-stage training (Stage 1: 30 ep hard labels, Stage 2: distillation); label smoothing | 60.2% | 75.1% | ~40% | 41 KB | Regression: Stage 1 created hard-label local minimum; Stage 2 LR cut to 7.5e-5 by epoch 12, model stuck at 39–40% for 100 epochs |
+| v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, Motorcycle, etc.) | TBD | TBD | TBD | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
+
+**Key lessons learned:**
+
+- SpecAugment breaks knowledge distillation: the teacher sees a full spectrogram but the student sees a masked one, so the soft labels do not correspond to the student's input.
+- Class weights must match the distribution of the dataset they are applied to. The distillation split is intentionally balanced; importing weights computed on the imbalanced regular split amplified minority classes by up to 14.7× and caused class collapse.
+- Two-stage training (hard labels then distillation) can trap the student in a local minimum that low-LR distillation cannot escape.
+- FSD50K compound label display names (`Crying, sobbing`) map to `_and_` in the ground-truth CSV (`Crying_and_sobbing`), not to comma-separated tokens. Labels not in the official 200-class list (Chainsaw, Baby_cry, Smoke_detector) simply do not exist in FSD50K and should be removed from the mapping.
 
 ## Expected Interpretation
 
 Commonalities:
 
 - same classification task
-- same input concept
+- same input concept (log-mel spectrogram)
 - same output labels
 - same model-training pipeline before conversion
 
@@ -152,7 +146,7 @@ Differences:
 - TinyML student model must fit into microcontroller memory
 - quantization reduces size and may reduce accuracy
 - inference runs locally on the ESP32
-- MQTT publishes only summarized results
+- MQTT publishes only summarised results
 - local inference improves privacy and reduces bandwidth
 - raw microphone samples can still be inspected during development through serial output or temporary debug topics
 - teacher-assisted training can improve the small model without deploying the teacher
@@ -162,7 +156,7 @@ Important interpretation:
 ```text
 The regular/YAMNet models do not need to fit on the microcontroller.
 They are training references used to improve and evaluate the compact student.
-The deployable edge version is the distilled int8 TFLite/TFLite Micro style model.
+The deployable edge version is the distilled int8 TFLite/TFLite Micro model.
 ```
 
 ## Artifacts To Produce
@@ -195,5 +189,5 @@ The explanation should be:
 
 ```text
 Raw or feature-level data is available during development for calibration and verification.
-The deployed MQTT/openHAB integration uses summarized inference data only.
+The deployed MQTT/openHAB integration uses summarised inference data only.
 ```
