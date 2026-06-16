@@ -96,16 +96,16 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Results from the best run to date (v5 student, v6 teacher; v7 in progress).
+Results from v7 (best run to date).
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
 | Target device | Laptop / Colab | Laptop / Colab training reference | ESP32 candidate |
 | Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
 | Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **41 KB** |
-| Test accuracy | 60.2% (float32) / 60.1% (int8) | 74.2% | **57.3%** (int8) |
+| Test accuracy | 59.4% (float32) / 59.2% (int8) | 74.5% | **58.6%** (int8) |
 | Confusion matrix | Saved as PNG | Saved as PNG | Saved as PNG |
-| Inference time | ~5.7 ms/window (laptop) | N/A | ~0.3 ms/window (ESP32 est.) |
+| Inference time | ~4.0 ms/window (laptop int8) | N/A | ~0.3 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
 | Data sent to openHAB | optional raw/central | not deployed | label + confidence only |
 | Debug data access | notebook arrays/plots | notebook arrays/plots | serial monitor or debug MQTT |
@@ -123,7 +123,7 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v4 | 13 | FSD50K full 51K-file extraction; Gaussian noise replaces SpecAugment for student augmentation | 57.6% | 74.2% | 13.4% | 41 KB | Class weights from imbalanced regular dataset applied to balanced distillation split — scream weight 14.7×, student collapsed to predicting scream for 430/1455 test examples |
 | v5 | 13 | Uniform weights in distillation; T=3.0 (down from 5.0) | 60.2% | 74.2% | **57.3%** | 41 KB | Fixed weight collapse; best student result to date |
 | v6 | 12 | `household_noise` dissolved; two-stage training (Stage 1: 30 ep hard labels, Stage 2: distillation); label smoothing | 60.2% | 75.1% | ~40% | 41 KB | Regression: Stage 1 created hard-label local minimum; Stage 2 LR cut to 7.5e-5 by epoch 12, model stuck at 39–40% for 100 epochs |
-| v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, Motorcycle, etc.) | TBD | TBD | TBD | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
+| v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | **58.6%** | 41 KB | New best student. Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources. 6 labels unmatched (Motorcycle, Bus, Train, Truck, Doorbell, Waves_and_surf) — audio still captured via parent categories (Vehicle, Rail_transport) |
 
 **Key lessons learned:**
 
