@@ -96,21 +96,23 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Results from v7 (best run to date).
+Results from v8 (best run to date).
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
 | Target device | Laptop / Colab | Laptop / Colab training reference | ESP32 candidate |
 | Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
-| Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **41 KB** |
-| Test accuracy | 59.4% (float32) / 59.2% (int8) | 74.5% | **58.6%** (int8) |
+| Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **64 KB** |
+| Test accuracy | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
 | Confusion matrix | Saved as PNG | Saved as PNG | Saved as PNG |
-| Inference time | ~4.0 ms/window (laptop int8) | N/A | ~0.3 ms/window (ESP32 est.) |
+| Inference time | ~6.6 ms/window (laptop int8) | N/A | ~0.4 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
 | Data sent to openHAB | optional raw/central | not deployed | label + confidence only |
 | Debug data access | notebook arrays/plots | notebook arrays/plots | serial monitor or debug MQTT |
 
 Chance accuracy with 12 classes is 8.3%. The YAMNet teacher result is not the ESP32 deployment target — it is the reference model whose soft probability output guides student training. The deployable result is the distilled compact student converted to int8 TFLite.
+
+**Notable v8 result:** the distilled student (66.9% int8, 64 KB) outperforms the scratch regular model (64.7%, 2.4 MB) trained on the same data — 37× smaller and more accurate. This is the core demonstration of knowledge distillation for edge deployment.
 
 ## Version Training History
 
@@ -123,7 +125,8 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v4 | 13 | FSD50K full 51K-file extraction; Gaussian noise replaces SpecAugment for student augmentation | 57.6% | 74.2% | 13.4% | 41 KB | Class weights from imbalanced regular dataset applied to balanced distillation split — scream weight 14.7×, student collapsed to predicting scream for 430/1455 test examples |
 | v5 | 13 | Uniform weights in distillation; T=3.0 (down from 5.0) | 60.2% | 74.2% | **57.3%** | 41 KB | Fixed weight collapse; best student result to date |
 | v6 | 12 | `household_noise` dissolved; two-stage training (Stage 1: 30 ep hard labels, Stage 2: distillation); label smoothing | 60.2% | 75.1% | ~40% | 41 KB | Regression: Stage 1 created hard-label local minimum; Stage 2 LR cut to 7.5e-5 by epoch 12, model stuck at 39–40% for 100 epochs |
-| v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | **58.6%** | 41 KB | New best student. Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources. 6 labels unmatched (Motorcycle, Bus, Train, Truck, Doorbell, Waves_and_surf) — audio still captured via parent categories (Vehicle, Rail_transport) |
+| v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
+| v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
 
 **Key lessons learned:**
 
