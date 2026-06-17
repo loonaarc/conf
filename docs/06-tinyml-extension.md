@@ -1,10 +1,10 @@
 # TinyML Extension
 
-The TinyML extension adds ESP32 audio nodes to the existing openHAB/MQTT safety-monitoring system.
+The TinyML extension adds an ESP32 audio node to the existing openHAB/MQTT safety-monitoring system.
 
 ## Goal
 
-Use an ESP32 WROOM and INMP441 microphone to classify short sound windows locally. The node should publish only summarized inference results to MQTT, not raw audio.
+Use an ESP32 WROOM and INMP441 microphone to classify short sound windows locally. The node publishes only summarized inference results to MQTT, not raw audio.
 
 ```text
 INMP441 microphone
@@ -15,7 +15,7 @@ INMP441 microphone
   -> openHAB risk score
 ```
 
-## Planned Node
+## Audio Node
 
 | Field | Value |
 | --- | --- |
@@ -28,11 +28,14 @@ INMP441 microphone
 Current hardware status:
 
 ```text
-ESP32 upload test: verified
-Arduino board profile: ESP32 Dev Module
-Local serial port during test: COM3
-INMP441 I2S capture: verified with changing avg_abs/peak serial output
-Working pins: SCK=D14/GPIO14, WS=D15/GPIO15, SD=D32/GPIO32, L/R=GND, VDD=3V3
+ESP32 upload test:         verified
+Arduino board profile:     ESP32 Dev Module
+Local serial port (test):  COM3
+INMP441 I2S capture:       verified — changing avg_abs/peak serial output confirmed
+MQTT feature topic:        verified — ESP32 connects to broker and publishes audio features
+Working pins:              SCK=D14/GPIO14, WS=D15/GPIO15, SD=D32/GPIO32, L/R=GND, VDD=3V3
+
+Model deployment:          pending — TinyML model not yet flashed to device
 ```
 
 ## Later Voice Command Node
@@ -53,7 +56,6 @@ arm
 silence
 disarm_code
 unknown
-silence
 ```
 
 The voice node is a convenience interface, not the highest-trust safety control. Touch on the physical alarm node remains the trusted local override.
@@ -104,7 +106,7 @@ Example payload:
 
 ## MQTT Payload
 
-Target deployment labels after adding ESC-50, UrbanSound8K, FSD50K, and own INMP441 recordings:
+Target deployment labels (12 classes, v6+) trained on ESC-50, UrbanSound8K, FSD50K, and the Donate-a-cry corpus:
 
 ```text
 glass_breaking
@@ -118,11 +120,10 @@ crying_or_sobbing
 pet_noise
 weather_noise
 mechanical_noise
-household_noise
 unknown_background
 ```
 
-Door knock and door creak can stay as optional experiments, but they are not core deployment labels because the existing reed switch already covers door state more reliably.
+`impact_or_thud` is kept clean of household sounds — risk scores are assigned per class in firmware, so mixing a door slam with a structural thud would pollute the risk category. `unknown_background` is the explicit escape valve for sounds the model does not recognise.
 
 Topic:
 
@@ -135,7 +136,6 @@ Payload:
 ```json
 {
   "label": "glass_breaking",
-  "risk_category": "impact",
   "confidence": 0.84,
   "rms": 0.62,
   "inference_ms": 38,
@@ -143,9 +143,11 @@ Payload:
 }
 ```
 
+The class-to-risk mapping is not part of the model output. It belongs in openHAB rules so risk policy can change without retraining the model.
+
 ## Debug And Raw Data Access
 
-The deployed system should publish only summarized inference results to openHAB. During development, raw microphone samples or feature previews can still be inspected locally.
+The deployed system publishes only summarized inference results to openHAB. During development, raw microphone samples or feature previews can still be inspected locally.
 
 This keeps the operational system privacy-preserving while still making the audio pipeline testable.
 
@@ -221,14 +223,15 @@ Out of scope:
 
 1. Solder and test ESP32 + INMP441. **Done**
 2. Verify I2S audio capture with a simple serial monitor sketch. **Done**
-3. Add serial debug output for stable RMS/peak, sample window stats, and later inference result.
-4. Build the notebook model comparison in `tinyml/notebooks/`.
-5. Train the YAMNet teacher and distilled compact student.
-6. Export the distilled int8 model to `tinyml/models/` and `tinyml/exported/`.
-7. Add ESP32 firmware under `tinyml/esp32_audio_node/`.
-8. Publish the normal MQTT classification payload.
-9. Add optional debug MQTT payloads for feature/sample previews.
-10. Add openHAB MQTT channels and Items.
-11. Add TinyML sound evidence to the risk-score rule.
-12. Later, use the second ESP32 as `safety_voice_1` for voice commands.
-13. Keep physical touch as the unconditional local disarm override.
+3. Add serial debug output for stable RMS/peak and sample window stats. **Done**
+4. Verify MQTT connection and debug feature topic from ESP32. **Done**
+5. Build the notebook model comparison in `tinyml/notebooks/`. **Done** (v8: 66.9% student int8 @ 64 KB; v9 in progress)
+6. Train the YAMNet teacher and distilled compact student. **Done** (v8: teacher 75.7%, student 66.9% int8)
+7. Export the distilled int8 model to `tinyml/exported/distilled_student_int8.cc`.
+8. Integrate model into ESP32 firmware under `tinyml/esp32_audio_node/` and flash to device.
+9. Publish the normal MQTT classification payload on `tele/safety_audio_1/CLASSIFICATION`.
+10. Add optional debug MQTT payloads for feature/sample previews.
+11. Add openHAB MQTT channels and Items.
+12. Add TinyML sound evidence to the risk-score rule.
+13. Later, use the second ESP32 as `safety_voice_1` for voice commands.
+14. Keep physical touch as the unconditional local disarm override.

@@ -1,6 +1,6 @@
 # Regular vs TinyML Model Comparison
 
-This document defines the Wahlfachprojekt comparison. The comparison should be small, reproducible, and directly connected to the safety-monitoring use case.
+This document defines the comparison between a regular model trained from scratch, the YAMMnet transfer learning model and a distilled student model. The comparison should be small, reproducible, and directly connected to the safety-monitoring use case.
 
 ## Research Question
 
@@ -8,9 +8,9 @@ How can a strong regular audio model help train a compact quantized TinyML model
 
 ## Task
 
-Classify short audio windows into selected real sound-event classes that fit the safety-monitoring story.
+Classify short audio windows into selected real sound-event classes that fit the safety-monitoring context.
 
-The notebook uses ESC-50 automatically and can add UrbanSound8K and FSD50K when those audio folders are present. This keeps the first run reproducible while supporting the more useful final label split with gunshot, thud, screaming, alarm, and mechanical false-positive classes.
+The notebook uses ESC-50 automatically, clones the Donate-a-cry corpus from GitHub, and can add UrbanSound8K and FSD50K when those audio folders are present. This keeps the first run reproducible while supporting the more useful final label split with gunshot, thud, screaming, alarm, and mechanical false-positive classes.
 
 ### Target Labels (v6+, 12 classes)
 
@@ -42,11 +42,11 @@ Useful verified source labels (v7):
 | `scream_or_shout` | FSD50K `Screaming`, `Shout`, `Yell`, `Screech` |
 | `siren_or_alarm` | ESC-50 `siren`, `clock_alarm`; UrbanSound8K `siren`; FSD50K `Siren`, `Alarm`, `Doorbell`, `Ringtone` |
 | `footsteps` | ESC-50 `footsteps`; FSD50K `Walk_and_footsteps`, `Run` |
-| `crying_or_sobbing` | ESC-50 `crying_baby`; FSD50K `Crying_and_sobbing` |
+| `crying_or_sobbing` | ESC-50 `crying_baby`; FSD50K `Crying_and_sobbing`; Donate-a-cry corpus (~450 wav, auto-cloned) |
 | `pet_noise` | ESC-50 `dog`, `cat`; UrbanSound8K `dog_bark`; FSD50K `Dog`, `Bark`, `Cat`, `Meow`, `Purr`, `Growling`, `Domestic_animals_and_pets` |
-| `weather_noise` | ESC-50 `rain`, `thunderstorm`, `water_drops`, `wind`, `sea_waves`; FSD50K `Rain`, `Raindrop`, `Thunder`, `Thunderstorm`, `Wind`, `Stream`, `Ocean`, `Waves_and_surf` |
-| `mechanical_noise` | ESC-50 `chainsaw`, `engine`, `helicopter`, `train`, `airplane`; UrbanSound8K `drilling`, `jackhammer`, `engine_idling`; FSD50K `Drill`, `Power_tool`, `Sawing`, `Tools`, `Mechanical_fan`, `Engine`, `Motor_vehicle_(road)`, `Aircraft`, `Motorcycle`, `Bus`, `Truck`, `Train`, `Rail_transport`, `Idling`, `Vehicle` |
-| `unknown_background` | ESC-50 `vacuum_cleaner`, `washing_machine`, `clock_tick`, `laughing`, `clapping`; FSD50K `Domestic_sounds_and_home_sounds`, `Cupboard_open_or_close`, `Drawer_open_or_close`, `Microwave_oven`, `Computer_keyboard`, `Typing`, `Speech`, `Music`, `Laughter`, `Chatter`, `Crowd`, `Clapping`, `Applause`, `Singing`, `Slam`, `Knock`, `Telephone`, `Water`, `Hiss`, `Giggle`, `Cheering`; UrbanSound8K `air_conditioner`, `car_horn`, `street_music` |
+| `weather_noise` | ESC-50 `rain`, `thunderstorm`, `water_drops`, `wind`, `sea_waves`, `crickets`; FSD50K `Rain`, `Raindrop`, `Thunder`, `Thunderstorm`, `Wind`, `Stream`, `Ocean`, `Waves_and_surf` |
+| `mechanical_noise` | ESC-50 `chainsaw`, `engine`, `helicopter`, `train`, `airplane`, `hand_saw`; UrbanSound8K `drilling`, `jackhammer`, `engine_idling`; FSD50K `Drill`, `Power_tool`, `Sawing`, `Tools`, `Mechanical_fan`, `Engine`, `Motor_vehicle_(road)`, `Aircraft`, `Motorcycle`, `Bus`, `Truck`, `Train`, `Rail_transport`, `Idling`, `Vehicle` |
+| `unknown_background` | ESC-50 `vacuum_cleaner`, `washing_machine`, `clock_tick`, `laughing`, `clapping`, `keyboard_typing`, `snoring`, `chirping_birds`, `crow`, `crackling_fire`; FSD50K `Domestic_sounds_and_home_sounds`, `Cupboard_open_or_close`, `Drawer_open_or_close`, `Microwave_oven`, `Computer_keyboard`, `Typing`, `Conversation`, `Speech`, `Music`, `Laughter`, `Chatter`, `Crowd`, `Clapping`, `Applause`, `Singing`, `Female_singing`, `Male_singing`, `Slam`, `Knock`, `Telephone`, `Water`, `Hiss`, `Giggle`, `Cheering`, `Fart`; UrbanSound8K `air_conditioner`, `car_horn`, `children_playing`, `street_music` |
 
 The model predicts the acoustic event class. The ESP32 firmware or openHAB rules later map that class to a risk category. This avoids training the model on categories that are semantically useful but acoustically inconsistent.
 
@@ -68,13 +68,14 @@ The class-to-risk mapping is not part of model training. It belongs in firmware/
 
 ## Notebook
 
-The prepared notebook is at:
+The current notebooks are versioned:
 
 ```text
-tinyml/notebooks/sound_classification_v7.ipynb
+tinyml/notebooks/sound_classification_v8.ipynb   <- best completed run
+tinyml/notebooks/sound_classification_v9.ipynb   <- current (Mixup augmentation)
 ```
 
-It uses a laptop/Colab-side audio dataset. This means the comparison is not blocked by soldering the INMP441 microphone. A laptop microphone can be added later for calibration or extra experiments, but the main comparison uses a fixed dataset so results are reproducible.
+It uses a laptop/Colab-side audio dataset so results are reproducible without depending on live microphone input. The INMP441 microphone is soldered and working; the TinyML model is not yet deployed on the ESP32.
 
 Development setup:
 
@@ -88,15 +89,17 @@ The local kernel is documented in `tinyml/README.md` as `Safety TinyML (.venv)`.
 For Colab dataset setup:
 
 ```text
-UrbanSound8K -> downloaded automatically by the notebook setup cell
-FSD50K       -> upload/extract audio to Google Drive at My Drive/tinyml_datasets/FSD50K/
+ESC-50        -> downloaded automatically by the notebook setup cell
+UrbanSound8K  -> downloaded automatically by the notebook setup cell
+FSD50K        -> upload/extract audio to Google Drive at My Drive/tinyml_datasets/FSD50K/
+Donate-a-cry  -> cloned automatically from GitHub (git clone --depth 1)
 ```
 
 The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD50K` when running in Colab. The FSD50K metadata zip is small and downloaded automatically; only the large audio files need to be provided.
 
 ## Comparison Table
 
-Results from v8 (best run to date).
+Results from v8 (best completed run). v9 (Mixup augmentation) is in progress.
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
@@ -127,6 +130,7 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v6 | 12 | `household_noise` dissolved; two-stage training (Stage 1: 30 ep hard labels, Stage 2: distillation); label smoothing | 60.2% | 75.1% | ~40% | 41 KB | Regression: Stage 1 created hard-label local minimum; Stage 2 LR cut to 7.5e-5 by epoch 12, model stuck at 39–40% for 100 epochs |
 | v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
 | v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
+| v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | — | — | — | — | Student-only retrain; results pending |
 
 **Key lessons learned:**
 

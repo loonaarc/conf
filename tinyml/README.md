@@ -1,17 +1,18 @@
 # TinyML Workspace
 
-This folder contains the planned TinyML work for the ESP32 audio-node extension.
+This folder contains the TinyML work for the ESP32 audio-node extension of the openHAB safety system.
 
 ## Structure
 
 ```text
 tinyml/
 |-- notebooks/
-|   `-- sound_classification_comparison.ipynb
+|   |-- sound_classification_v8.ipynb   <- best completed run (66.9% student int8)
+|   `-- sound_classification_v9.ipynb   <- current: adds Mixup augmentation
 |-- data/
-|   |-- raw/
+|   |-- raw/                            <- ESC-50 auto-downloaded; US8K/FSD50K/DonateACry optional
 |   `-- processed/
-|-- models/
+|-- models/                             <- local copies of exported artifacts
 |   |-- regular_model.keras
 |   |-- regular_model_float32.tflite
 |   |-- tiny_model_int8.tflite
@@ -19,7 +20,7 @@ tinyml/
 |   |-- distilled_student_float32.tflite
 |   `-- distilled_student_int8.tflite
 |-- exported/
-|   |-- distilled_student_int8.cc
+|   |-- distilled_student_int8.cc       <- drop into ESP32 firmware as model_data.h
 |   `-- figures/
 `-- esp32_audio_node/
     |-- platformio.ini
@@ -27,25 +28,18 @@ tinyml/
         `-- main.cpp
 ```
 
-The notebook trains and compares the models. The ESP32 firmware later uses the exported TinyML model and publishes MQTT classification summaries to openHAB.
+## What the notebook does
 
-## Sound Classification Comparison
+Each versioned notebook trains and compares four models on the same safety-relevant audio task:
 
-The current notebook is:
+1. **Regular TensorFlow model** — compact Conv2D CNN, laptop/Colab baseline
+2. **YAMNet teacher** — 1024-dim pretrained embeddings + deep Dense head, Colab reference only
+3. **Distilled TinyML student** — four-block SeparableConv2D, guided by teacher soft labels during training, exported as int8 TFLite for ESP32
+4. **Quantized regular model** — int8 TFLite version of the baseline, for comparison
 
-```text
-notebooks/sound_classification_comparison.ipynb
-```
+The regular and YAMNet models are training references. Only the distilled student is exported for ESP32 deployment.
 
-Run it on the laptop or in Colab first. It downloads an audio dataset, trains a regular TensorFlow model, trains a YAMNet transfer-learning teacher, trains a distilled compact student model, converts the student to TensorFlow Lite, quantizes it to int8, and compares size/accuracy/inference time.
-
-The real ESP32 + INMP441 microphone is not required for this notebook. The regular and YAMNet models are laptop/Colab training references and do not need to fit on the microcontroller. The ESP32 candidate is the distilled student model exported as quantized int8 TFLite.
-
-The notebook builds one combined training manifest. ESC-50 is downloaded automatically. UrbanSound8K and FSD50K are used automatically when their audio folders are present under `tinyml/data/raw/` or Colab `/content/data/raw/`.
-
-The notebook uses `soundfile` for loading WAV files instead of only TensorFlow's built-in WAV decoder. This is intentional: some UrbanSound8K/FSD50K files use WAV header variants that can fail with `tf.audio.decode_wav`, while `soundfile` handles them more reliably.
-
-The current target labels are:
+## Target Labels (12 classes, v6+)
 
 ```text
 glass_breaking
@@ -59,24 +53,39 @@ crying_or_sobbing
 pet_noise
 weather_noise
 mechanical_noise
-household_noise
 unknown_background
 ```
 
-The reason for this split is that the audio node should focus on sounds the existing IoT sensors cannot detect well. For example, door opening is already covered by the reed switch, while gunshot, thud, screaming, glass shatter, alarm sounds, weather noise, household noise, and mechanical false positives are better handled by audio classification.
+`household_noise` was dissolved into `unknown_background` in v6. `impact_or_thud` is kept clean of household sounds because risk scores are assigned per class in firmware. `unknown_background` is the explicit escape valve for sounds the model does not recognise.
 
-The model should learn the most accurate acoustic label it can. Later, the ESP32 firmware or openHAB rules can map the predicted class to a risk category. This keeps machine learning separate from safety policy:
+The model predicts the acoustic class. Risk policy lives in the ESP32 firmware or openHAB rules, not in the model.
+
+## Datasets
+
+| Dataset | How it arrives | Approx clips used |
+|---|---|---|
+| ESC-50 | Auto-downloaded by notebook | ~1 750 |
+| UrbanSound8K | Auto-downloaded in Colab | ~6 000 |
+| FSD50K | Upload to Google Drive once | ~30 000+ |
+| Donate-a-cry | Auto-cloned from GitHub (`git clone --depth 1`) | ~450 |
+
+Per-class cap is 1 200 clips to avoid one source dominating. Classes below the cap use all available clips.
+
+## Drive Checkpoint Strategy
+
+Models are saved to `My Drive/tinyml_models/` with version-aware names:
 
 ```text
-ML model -> glass_breaking
-ESP32/openHAB mapping -> impact / high risk contribution
+regular_model_best_v8.keras
+yamnet_teacher_best_v8.keras
+distilled_student_checkpoint_v9.keras   <- student version tracks student changes only
 ```
 
-The notebook also includes a YAMNet transfer-learning teacher. This uses pretrained audio embeddings from TensorFlow Hub to produce stronger class probabilities. A compact student CNN then learns from both the true ESC-50 labels and the YAMNet teacher probabilities. Only the student is exported for ESP32-style deployment.
+`FEATURE_CACHE_VERSION` controls the feature cache and teacher/regular checkpoint names. `STUDENT_VERSION` controls only the student checkpoint. Bumping `STUDENT_VERSION` without changing `FEATURE_CACHE_VERSION` reuses cached features and trained teacher/regular models, so only the student retrains.
 
 ## VS Code Kernel Setup
 
-Use a local virtual environment for editing and light runs in VS Code. From the `tinyml` folder:
+Use a local virtual environment for editing and light runs. From the `tinyml` folder:
 
 ```powershell
 cd C:\Users\lil\openhab-5.1.4\conf\tinyml
@@ -87,73 +96,39 @@ python -m pip install -r requirements.txt
 python -m ipykernel install --user --name safety-tinyml --display-name "Safety TinyML (.venv)"
 ```
 
-Then open:
-
-```text
-notebooks/sound_classification_comparison.ipynb
-```
-
-In VS Code, choose the kernel:
+Then open any versioned notebook in VS Code and select the kernel:
 
 ```text
 Safety TinyML (.venv)
 ```
 
-This keeps the dependencies separate from your openHAB project and from your global Python installation.
-
 ## Colab Use
 
-For heavier training, use Google Colab. The notebook is written so paths work both from the repo and from the `tinyml/notebooks` folder. In Colab, upload or open the same notebook and run the dependency cell/command:
+For full training, use Google Colab. The notebook detects Colab automatically and installs its own dependencies.
 
-The first code cell detects whether the notebook is running in Colab. If it is, it installs the notebook dependencies in the remote Colab runtime. If it is running locally, it does not install anything and expects the local `.venv` from the setup above.
-
-The notebook has a dedicated **Colab Dataset Setup** section.
-
-Recommended order in Colab:
+Recommended order:
 
 1. Run the dependency/setup cell.
-2. Run the **Colab Dataset Setup** cell.
-3. Run the normal dataset-loading and training cells.
+2. Run the **Colab Dataset Setup** cell (mounts Drive, downloads UrbanSound8K and Donate-a-cry, links FSD50K).
+3. Run the remaining cells top to bottom.
 
-UrbanSound8K:
-
-```text
-The notebook downloads and extracts UrbanSound8K automatically in Colab.
-It becomes available at /content/data/raw/UrbanSound8K/
-```
-
-FSD50K:
-
-FSD50K audio is larger, so upload or extract it in Google Drive once.
-
-Create this folder in Google Drive:
+**FSD50K** audio must be uploaded once to Google Drive:
 
 ```text
 My Drive/tinyml_datasets/FSD50K/
 ```
 
-Put the extracted FSD50K `.wav` files somewhere inside that folder. The exact subfolder names do not matter because the notebook searches recursively. These are both fine:
+The notebook searches recursively, so subfolder names do not matter.
+
+**Saved checkpoints** land in:
 
 ```text
-My Drive/tinyml_datasets/FSD50K/12345.wav
-My Drive/tinyml_datasets/FSD50K/FSD50K.dev_audio/12345.wav
-My Drive/tinyml_datasets/FSD50K/FSD50K.eval_audio/67890.wav
+My Drive/tinyml_models/
 ```
 
-In Colab, the setup cell mounts Drive and links:
+Download the generated artifacts after training and copy them to `tinyml/models/` and `tinyml/exported/` locally.
 
-```text
-/content/drive/MyDrive/tinyml_datasets/FSD50K
--> /content/data/raw/FSD50K
-```
-
-Then the normal dataset loader can find FSD50K audio automatically.
-
-The generated model files can be downloaded from Colab and copied back into `tinyml/models/` and `tinyml/exported/`. Audio files downloaded in Colab stay in the remote Colab filesystem; they will not appear automatically in the local Windows project folder.
-
-If you connect VS Code to a Colab runtime, treat the Colab runtime as the execution kernel and the local `.venv` as the local fallback/editing kernel. The notebook comparison itself is the same in both cases.
-
-Expected generated artifacts:
+## Expected Artifacts
 
 ```text
 models/regular_model.keras
@@ -162,14 +137,14 @@ models/tiny_model_int8.tflite
 models/distilled_student_model.keras
 models/distilled_student_float32.tflite
 models/distilled_student_int8.tflite
-exported/distilled_student_int8.cc
+exported/distilled_student_int8.cc      <- rename to model_data.h for ESP32 firmware
 exported/figures/*.png
 ```
 
-Later, after the INMP441 is soldered, the ESP32 audio node can publish only summarized results to:
+After the model is deployed on INMP441 microphone, the ESP32 audio node publishes summarised inference results to:
 
 ```text
 tele/safety_audio_1/CLASSIFICATION
 ```
 
-with fields such as `label`, `confidence`, `rms`, and `inference_ms`.
+with fields `label`, `confidence`, `rms`, and `inference_ms`. Raw audio does not enter the openHAB data path.
