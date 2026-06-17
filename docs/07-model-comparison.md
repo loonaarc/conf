@@ -99,7 +99,7 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Results from v8 (best completed run). v9 (Mixup augmentation) is in progress.
+Results from v8 (best student result). v9 ran but student regressed — v8 student (66.9%) remains the best.
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
@@ -107,11 +107,15 @@ Results from v8 (best completed run). v9 (Mixup augmentation) is in progress.
 | Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
 | Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **64 KB** |
 | Test accuracy | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
-| Confusion matrix | ![Regular](../tinyml/exported/figures/regular_tensorflow_confusion_matrix.png) | ![Teacher](../tinyml/exported/figures/yamnet_teacher_confusion_matrix.png) | pending v9 |
+| Confusion matrix | ![Regular](../tinyml/exported/figures/regular_tensorflow_confusion_matrix.png) | ![Teacher](../tinyml/exported/figures/yamnet_teacher_confusion_matrix.png) | ![Student int8](../tinyml/exported/figures/distilled_student_int8_confusion_matrix.png) |
 | Inference time | ~6.6 ms/window (laptop int8) | N/A | ~0.4 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
 | Data sent to openHAB | optional raw/central | not deployed | label + confidence only |
 | Debug data access | notebook arrays/plots | notebook arrays/plots | serial monitor or debug MQTT |
+
+Distilled student float32 (before quantization):
+
+![Student float32](../tinyml/exported/figures/distilled_student_confusion_matrix.png)
 
 Quantized regular model (plain int8 baseline, no distillation):
 
@@ -134,7 +138,8 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v6 | 12 | `household_noise` dissolved; two-stage training (Stage 1: 30 ep hard labels, Stage 2: distillation); label smoothing | 60.2% | 75.1% | ~40% | 41 KB | Regression: Stage 1 created hard-label local minimum; Stage 2 LR cut to 7.5e-5 by epoch 12, model stuck at 39–40% for 100 epochs |
 | v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
 | v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
-| v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | — | — | — | — | Student-only retrain; results pending |
+| v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | 64.7% | 75.7% | 64.0% | 64 KB | Regression vs v8: student dropped from 66.9% to 64.0%. Mixup alpha=0.2 too aggressive — blended spectrograms may create unrealistic combinations for this dataset. v8 remains best student. |
+| v10 | 12 | Two-phase teacher: Phase 1 frozen embeddings + Dense head, Phase 2 hub.KerasLayer(trainable=True) @ LR=1e-5, Phase 3 re-extract embeddings with fine-tuned YAMNet; BatchNorm after every student SepConv block; Mixup removed | — | — | — | — | Results pending |
 
 **Key lessons learned:**
 
@@ -142,6 +147,7 @@ Each version is a separate notebook. Key changes and their measured impact on di
 - Class weights must match the distribution of the dataset they are applied to. The distillation split is intentionally balanced; importing weights computed on the imbalanced regular split amplified minority classes by up to 14.7× and caused class collapse.
 - Two-stage training (hard labels then distillation) can trap the student in a local minimum that low-LR distillation cannot escape.
 - FSD50K compound label display names (`Crying, sobbing`) map to `_and_` in the ground-truth CSV (`Crying_and_sobbing`), not to comma-separated tokens. Labels not in the official 200-class list (Chainsaw, Baby_cry, Smoke_detector) simply do not exist in FSD50K and should be removed from the mapping.
+- Mixup augmentation (v9, alpha=0.2) caused a regression from 66.9% to 64.0%. Blending acoustically diverse spectrograms may create unrealistic combinations that hurt rather than regularise. SpecAugment broke distillation for a different reason (masked input vs full-spectrogram teacher); Mixup broke it by creating blended inputs that neither label describes well.
 
 ## Expected Interpretation
 

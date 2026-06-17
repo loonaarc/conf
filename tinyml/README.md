@@ -7,8 +7,9 @@ This folder contains the TinyML work for the ESP32 audio-node extension of the o
 ```text
 tinyml/
 |-- notebooks/
-|   |-- sound_classification_v8.ipynb   <- best completed run (66.9% student int8)
-|   `-- sound_classification_v9.ipynb   <- current: adds Mixup augmentation
+|   |-- sound_classification_v8.ipynb   <- best student result so far (66.9% int8, 64 KB)
+|   |-- sound_classification_v9.ipynb   <- v9 ran: Mixup regression to 64.0%, v8 student remains best
+|   `-- sound_classification_v10.ipynb  <- current: YAMNet fine-tuning + student BatchNorm
 |-- data/
 |   |-- raw/                            <- ESC-50 auto-downloaded; US8K/FSD50K/DonateACry optional
 |   `-- processed/
@@ -78,10 +79,13 @@ Models are saved to `My Drive/tinyml_models/` with version-aware names:
 ```text
 regular_model_best_v8.keras
 yamnet_teacher_best_v8.keras
-distilled_student_checkpoint_v9.keras   <- student version tracks student changes only
+distilled_student_checkpoint_v9.keras    <- v9 student (Mixup, regressed to 64.0%)
+regular_model_best_v10.keras
+yamnet_teacher_best_v10.keras            <- v10: fine-tuned YAMNet teacher
+distilled_student_checkpoint_v10.keras   <- v10 student (BatchNorm, no Mixup)
 ```
 
-`FEATURE_CACHE_VERSION` controls the feature cache and teacher/regular checkpoint names. `STUDENT_VERSION` controls only the student checkpoint. Bumping `STUDENT_VERSION` without changing `FEATURE_CACHE_VERSION` reuses cached features and trained teacher/regular models, so only the student retrains.
+`FEATURE_CACHE_VERSION` controls the feature cache and teacher/regular checkpoint names. `STUDENT_VERSION` controls only the student checkpoint. Bumping only `STUDENT_VERSION` reuses cached features and the trained teacher, so only the student retrains. Bumping `FEATURE_CACHE_VERSION` (as in v10) forces the teacher to retrain and embeddings to be re-extracted — necessary when the teacher or audio preprocessing changes.
 
 ## VS Code Kernel Setup
 
