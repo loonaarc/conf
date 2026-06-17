@@ -107,11 +107,15 @@ Results from v8 (best completed run). v9 (Mixup augmentation) is in progress.
 | Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
 | Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **64 KB** |
 | Test accuracy | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
-| Confusion matrix | Saved as PNG | Saved as PNG | Saved as PNG |
+| Confusion matrix | ![Regular](../tinyml/exported/figures/regular_tensorflow_confusion_matrix.png) | ![Teacher](../tinyml/exported/figures/yamnet_teacher_confusion_matrix.png) | pending v9 |
 | Inference time | ~6.6 ms/window (laptop int8) | N/A | ~0.4 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
 | Data sent to openHAB | optional raw/central | not deployed | label + confidence only |
 | Debug data access | notebook arrays/plots | notebook arrays/plots | serial monitor or debug MQTT |
+
+Quantized regular model (plain int8 baseline, no distillation):
+
+![Plain TinyML int8](../tinyml/exported/figures/plain_tinyml_int8_confusion_matrix.png)
 
 Chance accuracy with 12 classes is 8.3%. The YAMNet teacher result is not the ESP32 deployment target — it is the reference model whose soft probability output guides student training. The deployable result is the distilled compact student converted to int8 TFLite.
 
