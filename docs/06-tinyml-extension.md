@@ -225,8 +225,8 @@ Out of scope:
 2. Verify I2S audio capture with a simple serial monitor sketch. **Done**
 3. Add serial debug output for stable RMS/peak and sample window stats. **Done**
 4. Verify MQTT connection and debug feature topic from ESP32. **Done**
-5. Build the notebook model comparison in `tinyml/notebooks/`. **Done** (v8: 66.9% int8 @ 64 KB; v9 Mixup regression 64.0%; v10 in progress: YAMNet fine-tuning + BatchNorm)
-6. Train the YAMNet teacher and distilled compact student. **Done** (v8: teacher 75.7%, student 66.9% int8)
+5. Build the notebook model comparison in `tinyml/notebooks/`. **Done** (v8: 66.9% int8 @ 64 KB; v9 Mixup regression 64.0%; v10 in progress: three-phase YAMNet teacher, Conv→BN→ReLU regular CNN, SpecAugment + T=4.0 student distillation)
+6. Train the YAMNet teacher and distilled compact student. **Done** (v8: teacher 75.7%, student 66.9% int8; v10 results pending)
 7. Export the distilled int8 model to `tinyml/exported/distilled_student_int8.cc`.
 8. Integrate model into ESP32 firmware under `tinyml/esp32_audio_node/` and flash to device.
 9. Publish the normal MQTT classification payload on `tele/safety_audio_1/CLASSIFICATION`.

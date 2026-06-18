@@ -71,8 +71,9 @@ The class-to-risk mapping is not part of model training. It belongs in firmware/
 The current notebooks are versioned:
 
 ```text
-tinyml/notebooks/sound_classification_v8.ipynb   <- best completed run
-tinyml/notebooks/sound_classification_v9.ipynb   <- current (Mixup augmentation)
+tinyml/notebooks/sound_classification_v8.ipynb   <- best completed run (student 66.9% int8)
+tinyml/notebooks/sound_classification_v9.ipynb   <- Mixup regression (student 64.0%)
+tinyml/notebooks/sound_classification_v10.ipynb  <- current (three-phase teacher, BatchNorm, SpecAugment student)
 ```
 
 It uses a laptop/Colab-side audio dataset so results are reproducible without depending on live microphone input. The INMP441 microphone is soldered and working; the TinyML model is not yet deployed on the ESP32.
@@ -99,14 +100,14 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Results from v8 (best student result). v9 ran but student regressed — v8 student (66.9%) remains the best.
+Last completed run: v8. v9 Mixup regression. v10 results pending.
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
 | Target device | Laptop / Colab | Laptop / Colab training reference | ESP32 candidate |
-| Numeric format | float32 | float32 embeddings/classifier | int8 after quantization |
+| Numeric format | float32 | float32 embeddings/classifier | int8 weights (float32 I/O) |
 | Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **64 KB** |
-| Test accuracy | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
+| Test accuracy (v8) | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
 | Confusion matrix | ![Regular](../tinyml/exported/figures/regular_tensorflow_confusion_matrix.png) | ![Teacher](../tinyml/exported/figures/yamnet_teacher_confusion_matrix.png) | ![Student int8](../tinyml/exported/figures/distilled_student_int8_confusion_matrix.png) |
 | Inference time | ~6.6 ms/window (laptop int8) | N/A | ~0.4 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
@@ -139,11 +140,11 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
 | v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
 | v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | 64.7% | 75.7% | 64.0% | 64 KB | Regression vs v8: student dropped from 66.9% to 64.0%. Mixup alpha=0.2 too aggressive — blended spectrograms may create unrealistic combinations for this dataset. v8 remains best student. |
-| v10 | 12 | Two-phase teacher: Phase 1 frozen embeddings + Dense head, Phase 2 hub.KerasLayer(trainable=True) @ LR=1e-5, Phase 3 re-extract embeddings with fine-tuned YAMNet; BatchNorm after every student SepConv block; Mixup removed | — | — | — | — | Results pending |
+| v10 | 12 | Three-phase teacher: Phase 1 frozen embeddings + compact Dense head (256→128, L2=1e-3, Dropout 0.5/0.4); Phase 2 end-to-end fine-tuning via `hub.load()` @ LR=1e-5 with 3-epoch warmup + gradient clipping (norm=1.0), 25 ep / patience 5; Phase 3 re-extract all embeddings with fine-tuned YAMNet. Regular CNN: `Conv → BatchNorm → ReLU` blocks added. Student: SpecAugment + Gaussian noise augmentation, Dropout(0.35) after Dense(128), distillation T=4.0. Student TFLite: float32 I/O (int8 internal) to avoid Normalization layer scale=0 collapse. | — | — | — | — | Results pending |
 
 **Key lessons learned:**
 
-- SpecAugment breaks knowledge distillation: the teacher sees a full spectrogram but the student sees a masked one, so the soft labels do not correspond to the student's input.
+- SpecAugment broke knowledge distillation in v3: the teacher processed the full spectrogram in the same forward pass as the student, so the teacher's soft labels reflected the un-masked input while the student saw the masked version. The fix (v10) is to pre-compute teacher soft labels on original un-masked spectrograms and store them in the dataset before any augmentation. SpecAugment then augments the student's input on-the-fly during training; the teacher labels remain anchored to the original examples. This is standard distillation practice and avoids the v3 failure.
 - Class weights must match the distribution of the dataset they are applied to. The distillation split is intentionally balanced; importing weights computed on the imbalanced regular split amplified minority classes by up to 14.7× and caused class collapse.
 - Two-stage training (hard labels then distillation) can trap the student in a local minimum that low-LR distillation cannot escape.
 - FSD50K compound label display names (`Crying, sobbing`) map to `_and_` in the ground-truth CSV (`Crying_and_sobbing`), not to comma-separated tokens. Labels not in the official 200-class list (Chainsaw, Baby_cry, Smoke_detector) simply do not exist in FSD50K and should be removed from the mapping.
