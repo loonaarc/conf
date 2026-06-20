@@ -1,13 +1,13 @@
 // ESP32 TFLite Micro sound classification with MQTT publishing.
-// Model: distilled student v8  –  66.9% int8 accuracy, 64 KB, 12 classes.
+// Model: distilled student v12  –  int8 I/O, no Normalization layer, ~60% accuracy, 12 classes.
 //
 // Captures 2 s of audio at 16 kHz, computes a 171x64 log-mel spectrogram,
 // runs the distilled int8 model, and publishes the result via MQTT.
 //
-// Before flashing, obtain from Colab and update:
-//   1. INPUT_SCALE / INPUT_ZERO_POINT  (interp.get_input_details()[0]['quantization'])
-//   2. Verify model_data.h matches the Colab export size (Colab: 65824 B, local: 65808 B)
-//      If they differ, download distilled_student_int8.cc from Drive and replace model_data.h.
+// Before flashing, obtain from Colab v12 cell and update:
+//   1. INPUT_SCALE / INPUT_ZERO_POINT   (interp.get_input_details()[0]['quantization'])
+//   2. OUTPUT_SCALE / OUTPUT_ZERO_POINT (interp.get_output_details()[0]['quantization'])
+//   3. Verify model_data.h matches the Colab export (copy exports/v12/exported/distilled_student_int8.cc)
 //
 // NOTE – sample-rate mismatch (known project limitation):
 //   Training: 44.1 kHz audio, mel range 80–16000 Hz.
@@ -88,11 +88,12 @@ const char* LABELS[NUM_LABELS] = {
 };
 
 // ── Quantization parameters ────────────────────────────────────────────────
-// From: interp.get_input_details()[0]['quantization'] on distilled_student_int8.tflite
-// Parsed from tinyml/models/distilled_student_int8.tflite (65808 bytes, TFL3, int8 I/O).
-// float 0.0 → int8 11;  float -10.0 → int8 -90;  float +5.0 → int8 +61.
-#define INPUT_SCALE      0.09936082f
-#define INPUT_ZERO_POINT 11
+// From Colab v12 cell output: INPUT_SCALE=... INPUT_ZERO_POINT=... OUTPUT_SCALE=... OUTPUT_ZERO_POINT=...
+// Update these before flashing.
+#define INPUT_SCALE       0.09936082f   // TODO: replace with v12 value
+#define INPUT_ZERO_POINT  11            // TODO: replace with v12 value
+#define OUTPUT_SCALE      0.00390625f   // TODO: replace with v12 value (1/256 is typical)
+#define OUTPUT_ZERO_POINT (-128)        // TODO: replace with v12 value
 
 // ── Globals ───────────────────────────────────────────────────────────────
 // Streaming audio approach: instead of a 64 KB audioBuf for the full 2 s window,
@@ -111,7 +112,7 @@ float  hannWindow[FRAME_LEN];    // 1.5 KB
 // melSpec[171][64] (44 KB) is also gone: values are quantized on the fly.
 float  melPoints[NUM_MEL + 2];   // mel triangle Hz endpoints: 264 bytes
 float  binFreqs[FFT_BINS];       // FFT bin Hz values: 1 KB
-float  modelInput[MODEL_IN];     // 42.7 KB — float32 I/O for v10 model
+int8_t modelInput[MODEL_IN];     // 10.7 KB — int8 I/O for v12 model
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -208,7 +209,9 @@ static void processFrame(int f) {
       else if (f_hz >  ctr && f_hz <= hi)  w = (hi  - f_hz) * invDesc;
       energy += (fftRe[k]*fftRe[k] + fftIm[k]*fftIm[k]) * w;
     }
-    modelInput[f * NUM_MEL + m] = logf(energy + 1e-6f);  // float32 direct — v10 model has Normalization layer
+    float logE = logf(energy + 1e-6f);
+    int q = (int)roundf(logE / INPUT_SCALE + INPUT_ZERO_POINT);
+    modelInput[f * NUM_MEL + m] = (int8_t)(q < -128 ? -128 : q > 127 ? 127 : q);
   }
 }
 
@@ -330,24 +333,25 @@ void loop() {
   float rms = captureAndProcess();
 
   // 2. Inference
-  memcpy(inputTensor->data.f, modelInput, MODEL_IN * sizeof(float));
+  memcpy(inputTensor->data.int8, modelInput, MODEL_IN * sizeof(int8_t));
   interpreter->Invoke();
 
   unsigned long inferenceMs = millis() - t0;
 
-  // 3. Decode best label (float32 logits — v10 model)
+  // 3. Decode best label (int8 logits — v12 model, dequantize for softmax)
   int bestIdx = 0;
   for (int i = 1; i < NUM_LABELS; i++)
-    if (outputTensor->data.f[i] > outputTensor->data.f[bestIdx]) bestIdx = i;
+    if (outputTensor->data.int8[i] > outputTensor->data.int8[bestIdx]) bestIdx = i;
 
   float expSum = 0.0f;
-  for (int i = 0; i < NUM_LABELS; i++) expSum += expf(outputTensor->data.f[i]);
-  float confidence = expf(outputTensor->data.f[bestIdx]) / expSum;
+  for (int i = 0; i < NUM_LABELS; i++)
+    expSum += expf((outputTensor->data.int8[i] - OUTPUT_ZERO_POINT) * OUTPUT_SCALE);
+  float confidence = expf((outputTensor->data.int8[bestIdx] - OUTPUT_ZERO_POINT) * OUTPUT_SCALE) / expSum;
 
   // 4. Publish classification
   char payload[200];
   snprintf(payload, sizeof(payload),
-    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v10\"}",
+    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v12\"}",
     LABELS[bestIdx], confidence, rms, inferenceMs);
   mqtt.publish(MQTT_TOPIC, payload);
 
