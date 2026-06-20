@@ -73,7 +73,7 @@
 #define NUM_POOL_MEL      32    // NUM_INPUT_MEL / 2
 #define MODEL_IN    (NUM_POOL_FRAMES * NUM_POOL_MEL)   // 2720
 #define NUM_LABELS  12
-#define ARENA_KB    107
+#define ARENA_KB    115
 
 // ── Labels — v8 TARGET_LABELS order (cell 8 of sound_classification_v8.ipynb)
 const char* LABELS[NUM_LABELS] = {
