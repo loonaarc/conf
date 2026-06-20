@@ -69,7 +69,7 @@
 #define NUM_LABELS  12
 // Heap-allocated below. Print arena_used_bytes() at boot to tune.
 // audioBuf removed from heap (streaming approach) so arena can be larger.
-#define ARENA_KB    120
+#define ARENA_KB    107
 
 // ── Labels — v8 TARGET_LABELS order (cell 8 of sound_classification_v8.ipynb)
 const char* LABELS[NUM_LABELS] = {
@@ -285,15 +285,15 @@ void setup() {
   buildHannWindow();
   buildMelFilterBank();
 
-  // Allocate tensorArena before Wi-Fi to get a contiguous pre-fragmentation block.
-  // With audioBuf gone (streaming approach), only one large heap allocation is needed.
+  // Allocate before Wi-Fi to get the largest contiguous block (measured max: ~110 KB).
+  // Static BSS is not viable: TFLite Micro library leaves only ~17 KB of headroom in dram0_0_seg.
   tensorArena = (uint8_t*)malloc(ARENA_KB * 1024);
   if (!tensorArena) {
     Serial.printf("FATAL: malloc tensorArena failed (%d KB) — free: %u, max: %u\n",
                   ARENA_KB, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
     while (true) delay(1000);
   }
-  Serial.printf("Free heap after malloc: %u bytes\n", ESP.getFreeHeap());
+  Serial.printf("Free heap after arena malloc: %u bytes\n", ESP.getFreeHeap());
 
   setupI2S();
   connectWifi();

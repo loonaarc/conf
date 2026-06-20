@@ -100,7 +100,7 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Last completed run: v8. v9 Mixup regression. v10 partial (student incomplete — run aborted at epoch 60/120).
+Last completed run: v10. Best student int8: v8 (66.9%). v10 trades 5.5pp accuracy for ESP32 deployability (MaxPool before first SepConv reduces arena from 437 KB → ~87 KB peak).
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
@@ -108,6 +108,7 @@ Last completed run: v8. v9 Mixup regression. v10 partial (student incomplete —
 | Numeric format | float32 | float32 embeddings/classifier | int8 weights (float32 I/O) |
 | Model size | ~2.4 MB (int8: 216 KB) | ~13 MB | **64 KB** |
 | Test accuracy (v8) | 64.7% (float32) / 64.5% (int8) | 75.7% | **66.9%** (int8) |
+| Test accuracy (v10) | 64.5% (float32) / 64.4% (int8) | **77.9%** | 62.3% (float32) / **61.4%** (int8, deployable) |
 | Confusion matrix | ![Regular](../tinyml/exported/figures/regular_tensorflow_confusion_matrix.png) | ![Teacher](../tinyml/exported/figures/yamnet_teacher_confusion_matrix.png) | ![Student int8](../tinyml/exported/figures/distilled_student_int8_confusion_matrix.png) |
 | Inference time | ~6.6 ms/window (laptop int8) | N/A | ~0.4 ms/window (ESP32 est.) |
 | Memory constraint | Low relevance | Too large for ESP32 WROOM | Fits in ESP32 flash |
@@ -140,7 +141,7 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
 | v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
 | v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | 64.7% | 75.7% | 64.0% | 64 KB | Regression vs v8: student dropped from 66.9% to 64.0%. Mixup alpha=0.2 too aggressive — blended spectrograms may create unrealistic combinations for this dataset. v8 remains best student. |
-| v10 | 12 | Three-phase teacher: Phase 1 frozen embeddings + compact Dense head (256→128, L2=1e-3, Dropout 0.5/0.4); Phase 2 end-to-end fine-tuning via `hub.load()` @ LR=1e-5 with 3-epoch warmup + gradient clipping (norm=1.0), 25 ep / patience 5; Phase 3 re-extract all embeddings with fine-tuned YAMNet. Regular CNN: `Conv → BatchNorm → ReLU` blocks added. Student: SpecAugment + Gaussian noise augmentation, Dropout(0.35) after Dense(128), distillation T=4.0. Student TFLite: float32 I/O (int8 internal) to avoid Normalization layer scale=0 collapse. | 64.5% | **77.9%** | incomplete (aborted ep 60/120, best val 64.3%) | — | Teacher +2.2pp vs v8 (fine-tuning worked). Student run aborted; quantization not executed. v8 remains best student. |
+| v10 | 12 | Three-phase teacher: Phase 1 frozen embeddings + compact Dense head (256→128, L2=1e-3, Dropout 0.5/0.4); Phase 2 end-to-end fine-tuning via `hub.load()` @ LR=1e-5 with 3-epoch warmup + gradient clipping (norm=1.0), 25 ep / patience 5; Phase 3 re-extract all embeddings with fine-tuned YAMNet. Regular CNN: `Conv → BatchNorm → ReLU` blocks added. Student: **MaxPooling2D before first SepConv** (ESP32 arena fix: 437 KB → ~87 KB peak); SpecAugment + Gaussian noise, Dropout(0.35), T=4.0. TFLite: float32 I/O (int8 internal). 91 epochs, early stop at ep 91, best val 62.6% at ep 73. | 64.5% | **77.9%** | **61.4%** (int8) | **70 KB** | Regression vs v8 (−5.5pp) but first student that actually deploys on ESP32 WROOM. Teacher improved +2.2pp via fine-tuning. v8 remains accuracy champion; v10 is the deployment candidate. |
 
 **Key lessons learned:**
 
