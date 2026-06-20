@@ -1,13 +1,10 @@
 // ESP32 TFLite Micro sound classification with MQTT publishing.
-// Model: distilled student v12  –  int8 I/O, no Normalization layer, ~60% accuracy, 12 classes.
+// Model: distilled student v13  –  float32 I/O, Input(85,32,1), MaxPool in firmware, ~61% accuracy.
 //
 // Captures 2 s of audio at 16 kHz, computes a 171x64 log-mel spectrogram,
 // runs the distilled int8 model, and publishes the result via MQTT.
 //
-// Before flashing, obtain from Colab v12 cell and update:
-//   1. INPUT_SCALE / INPUT_ZERO_POINT   (interp.get_input_details()[0]['quantization'])
-//   2. OUTPUT_SCALE / OUTPUT_ZERO_POINT (interp.get_output_details()[0]['quantization'])
-//   3. Verify model_data.h matches the Colab export (copy exports/v12/exported/distilled_student_int8.cc)
+// No quantization constants needed: float32 I/O, firmware feeds raw pooled log-mel values.
 //
 // NOTE – sample-rate mismatch (known project limitation):
 //   Training: 44.1 kHz audio, mel range 80–16000 Hz.
@@ -64,11 +61,14 @@
 #define MEL_HI    8000.0f   // Nyquist for 16 kHz (notebook uses 16000 for 44.1 kHz)
 
 // ── Model geometry ─────────────────────────────────────────────────────────
-#define NUM_FRAMES  171
-#define MODEL_IN    (NUM_FRAMES * NUM_MEL)   // 10944
+// v13: 2×2 MaxPool applied here in firmware before feeding model.
+// Input frames: 170 (even) → 85 pooled time frames; 64 mel bins → 32 pooled bins.
+#define NUM_INPUT_FRAMES  170
+#define NUM_INPUT_MEL     64
+#define NUM_POOL_FRAMES   85    // NUM_INPUT_FRAMES / 2
+#define NUM_POOL_MEL      32    // NUM_INPUT_MEL / 2
+#define MODEL_IN    (NUM_POOL_FRAMES * NUM_POOL_MEL)   // 2720
 #define NUM_LABELS  12
-// Heap-allocated below. Print arena_used_bytes() at boot to tune.
-// audioBuf removed from heap (streaming approach) so arena can be larger.
 #define ARENA_KB    107
 
 // ── Labels — v8 TARGET_LABELS order (cell 8 of sound_classification_v8.ipynb)
@@ -87,13 +87,6 @@ const char* LABELS[NUM_LABELS] = {
   "unknown_background"
 };
 
-// ── Quantization parameters ────────────────────────────────────────────────
-// From Colab v12 cell output: INPUT_SCALE=... INPUT_ZERO_POINT=... OUTPUT_SCALE=... OUTPUT_ZERO_POINT=...
-// Update these before flashing.
-#define INPUT_SCALE       0.09936082f   // TODO: replace with v12 value
-#define INPUT_ZERO_POINT  11            // TODO: replace with v12 value
-#define OUTPUT_SCALE      0.00390625f   // TODO: replace with v12 value (1/256 is typical)
-#define OUTPUT_ZERO_POINT (-128)        // TODO: replace with v12 value
 
 // ── Globals ───────────────────────────────────────────────────────────────
 // Streaming audio approach: instead of a 64 KB audioBuf for the full 2 s window,
@@ -108,11 +101,10 @@ float  frame[FFT_SIZE];          // 2 KB
 float  fftRe[FFT_SIZE];          // 2 KB
 float  fftIm[FFT_SIZE];          // 2 KB
 float  hannWindow[FRAME_LEN];    // 1.5 KB
-// melPoints[NUM_MEL+2] replaces the 64 KB melFilterBank[64][257].
-// melSpec[171][64] (44 KB) is also gone: values are quantized on the fly.
-float  melPoints[NUM_MEL + 2];   // mel triangle Hz endpoints: 264 bytes
-float  binFreqs[FFT_BINS];       // FFT bin Hz values: 1 KB
-int8_t modelInput[MODEL_IN];     // 10.7 KB — int8 I/O for v12 model
+float  melPoints[NUM_INPUT_MEL + 2];  // mel triangle Hz endpoints: 264 bytes
+float  binFreqs[FFT_BINS];            // FFT bin Hz values: 1 KB
+float  prevMelLine[NUM_INPUT_MEL];    // previous mel frame for time-axis pooling: 256 bytes
+float  modelInput[MODEL_IN];          // 10.9 KB — pooled log-mel, float32 I/O for v13
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -130,8 +122,8 @@ static float melToHz(float mel) { return 700.0f * (powf(10.0f, mel / 2595.0f) - 
 void buildMelFilterBank() {
   float melLo = hzToMel(MEL_LO);
   float melHi = hzToMel(MEL_HI);
-  for (int i = 0; i < NUM_MEL + 2; i++)
-    melPoints[i] = melToHz(melLo + i * (melHi - melLo) / (NUM_MEL + 1));
+  for (int i = 0; i < NUM_INPUT_MEL + 2; i++)
+    melPoints[i] = melToHz(melLo + i * (melHi - melLo) / (NUM_INPUT_MEL + 1));
   for (int k = 0; k < FFT_BINS; k++)
     binFreqs[k] = (float)k * SAMPLE_RATE / FFT_SIZE;
 }
@@ -191,11 +183,12 @@ static void i2sFill(int16_t* buf, int pos, int count) {
 }
 
 // ── Process one mel frame from streamBuf → modelInput[f*NUM_MEL ..] ────────
-static void processFrame(int f) {
+// Compute 64 log-mel bin values from streamBuf into melOut[NUM_INPUT_MEL].
+static void computeMelFrame(float* melOut) {
   for (int i = 0; i < FRAME_LEN; i++)
     frame[i] = streamBuf[i] / 8192.0f * hannWindow[i];
   computeFFT(frame);
-  for (int m = 0; m < NUM_MEL; m++) {
+  for (int m = 0; m < NUM_INPUT_MEL; m++) {
     float lo  = melPoints[m];
     float ctr = melPoints[m + 1];
     float hi  = melPoints[m + 2];
@@ -209,30 +202,37 @@ static void processFrame(int f) {
       else if (f_hz >  ctr && f_hz <= hi)  w = (hi  - f_hz) * invDesc;
       energy += (fftRe[k]*fftRe[k] + fftIm[k]*fftIm[k]) * w;
     }
-    float logE = logf(energy + 1e-6f);
-    int q = (int)roundf(logE / INPUT_SCALE + INPUT_ZERO_POINT);
-    modelInput[f * NUM_MEL + m] = (int8_t)(q < -128 ? -128 : q > 127 ? 127 : q);
+    melOut[m] = logf(energy + 1e-6f);
   }
 }
 
-// ── Streaming capture + spectrogram + quantization ─────────────────────────
-// Replaces the old "read 32000 samples into audioBuf" + computeAndQuantize().
-// Memory: streamBuf[371] = 742 bytes (vs 64 KB audioBuf).
-// Total samples read = FRAME_LEN + (NUM_FRAMES-1)*FRAME_STEP = 31991.
-// Returns RMS of the first frame's samples (debug only).
+// Capture 170 frames, apply 2x2 MaxPool on the fly, write 85x32 floats to modelInput.
+// Even frames are buffered in prevMelLine; odd frames are pooled with the previous one
+// (time axis), then adjacent mel bin pairs are max-pooled (freq axis).
 float captureAndProcess() {
-  // Fill initial window
+  float curMel[NUM_INPUT_MEL];
+
   i2sFill(streamBuf, 0, FRAME_LEN);
 
-  // RMS over first window (proxy for signal level)
   int64_t sumSq = 0;
   for (int i = 0; i < FRAME_LEN; i++) sumSq += (int64_t)streamBuf[i] * streamBuf[i];
   float rms = sqrtf((float)sumSq / FRAME_LEN);
 
-  for (int f = 0; f < NUM_FRAMES; f++) {
-    processFrame(f);
-    if (f < NUM_FRAMES - 1) {
-      // Slide window: keep OVERLAP_LEN old samples, read FRAME_STEP new ones
+  for (int f = 0; f < NUM_INPUT_FRAMES; f++) {
+    computeMelFrame(curMel);
+
+    if (f % 2 == 0) {
+      memcpy(prevMelLine, curMel, NUM_INPUT_MEL * sizeof(float));
+    } else {
+      int outF = f / 2;
+      for (int m = 0; m < NUM_INPUT_MEL; m += 2) {
+        float t0 = fmaxf(prevMelLine[m],   curMel[m]);
+        float t1 = fmaxf(prevMelLine[m+1], curMel[m+1]);
+        modelInput[outF * NUM_POOL_MEL + m / 2] = fmaxf(t0, t1);
+      }
+    }
+
+    if (f < NUM_INPUT_FRAMES - 1) {
       memmove(streamBuf, streamBuf + FRAME_STEP, OVERLAP_LEN * sizeof(int16_t));
       i2sFill(streamBuf, OVERLAP_LEN, FRAME_STEP);
     }
@@ -333,25 +333,24 @@ void loop() {
   float rms = captureAndProcess();
 
   // 2. Inference
-  memcpy(inputTensor->data.int8, modelInput, MODEL_IN * sizeof(int8_t));
+  memcpy(inputTensor->data.f, modelInput, MODEL_IN * sizeof(float));
   interpreter->Invoke();
 
   unsigned long inferenceMs = millis() - t0;
 
-  // 3. Decode best label (int8 logits — v12 model, dequantize for softmax)
+  // 3. Decode best label (float32 logits — v13 model)
   int bestIdx = 0;
   for (int i = 1; i < NUM_LABELS; i++)
-    if (outputTensor->data.int8[i] > outputTensor->data.int8[bestIdx]) bestIdx = i;
+    if (outputTensor->data.f[i] > outputTensor->data.f[bestIdx]) bestIdx = i;
 
   float expSum = 0.0f;
-  for (int i = 0; i < NUM_LABELS; i++)
-    expSum += expf((outputTensor->data.int8[i] - OUTPUT_ZERO_POINT) * OUTPUT_SCALE);
-  float confidence = expf((outputTensor->data.int8[bestIdx] - OUTPUT_ZERO_POINT) * OUTPUT_SCALE) / expSum;
+  for (int i = 0; i < NUM_LABELS; i++) expSum += expf(outputTensor->data.f[i]);
+  float confidence = expf(outputTensor->data.f[bestIdx]) / expSum;
 
   // 4. Publish classification
   char payload[200];
   snprintf(payload, sizeof(payload),
-    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v12\"}",
+    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v13\"}",
     LABELS[bestIdx], confidence, rms, inferenceMs);
   mqtt.publish(MQTT_TOPIC, payload);
 
