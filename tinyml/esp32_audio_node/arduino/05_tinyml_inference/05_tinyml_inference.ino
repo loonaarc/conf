@@ -1,24 +1,32 @@
 // ESP32 TFLite Micro sound classification with MQTT publishing.
+// Model: distilled student v8  –  66.9% int8 accuracy, 64 KB, 12 classes.
 //
 // Captures 2 s of audio at 16 kHz, computes a 171x64 log-mel spectrogram,
 // runs the distilled int8 model, and publishes the result via MQTT.
 //
-// NOTE – sample-rate mismatch:
-//   The notebook trained on 44.1 kHz audio (mel range 80–16000 Hz).
-//   The ESP32 captures at 16 kHz (Nyquist = 8 kHz).
-//   STFT frame length/step are scaled to keep the same time resolution,
-//   producing the same 171x64 shape. Frequency coverage is 80–8000 Hz.
-//   This is a known project limitation noted in the report.
+// Before flashing, obtain from Colab and update:
+//   1. INPUT_SCALE / INPUT_ZERO_POINT  (interp.get_input_details()[0]['quantization'])
+//   2. Verify model_data.h matches the Colab export size (Colab: 65824 B, local: 65808 B)
+//      If they differ, download distilled_student_int8.cc from Drive and replace model_data.h.
+//
+// NOTE – sample-rate mismatch (known project limitation):
+//   Training: 44.1 kHz audio, mel range 80–16000 Hz.
+//   ESP32:    16 kHz capture, Nyquist = 8 kHz, mel range 80–8000 Hz.
+//   STFT frame/step are time-scaled to keep the same 171×64 output shape.
+//   Most safety-relevant sound energy is below 8 kHz; limitation is acceptable.
 
 #include <Arduino.h>
 #include <driver/i2s.h>
 #include <math.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <EloquentTinyML.h>
-#include <eloquent_tinyml/tensorflow.h>
+#include <TensorFlowLite_ESP32.h>
+#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/schema/schema_generated.h"
 
-#include "model_data.h"   // <-- replace placeholder with Colab output
+#include "model_data.h"
 
 // ── Wi-Fi / MQTT ───────────────────────────────────────────────────────────
 #define WIFI_SSID     "realme C3"
@@ -44,10 +52,11 @@
 // Notebook: frame=1024, step=512 @ 44100 Hz  →  23.2 ms frame, 11.6 ms hop
 // ESP32:    frame=371,  step=186 @ 16000 Hz  →  same durations
 // FFT size: nearest power-of-2 ≥ 371 = 512
-#define FRAME_LEN   371
-#define FRAME_STEP  186
-#define FFT_SIZE    512
-#define FFT_BINS    (FFT_SIZE / 2 + 1)   // 257
+#define FRAME_LEN    371
+#define FRAME_STEP   186
+#define OVERLAP_LEN  (FRAME_LEN - FRAME_STEP)   // 185 — overlap kept between frames
+#define FFT_SIZE     512
+#define FFT_BINS     (FFT_SIZE / 2 + 1)          // 257
 
 // ── Mel filter bank ────────────────────────────────────────────────────────
 #define NUM_MEL   64
@@ -56,45 +65,62 @@
 
 // ── Model geometry ─────────────────────────────────────────────────────────
 #define NUM_FRAMES  171
-#define MODEL_IN    (NUM_FRAMES * NUM_MEL)   // 10944 floats
-#define NUM_LABELS  11
-#define ARENA_KB    80
+#define MODEL_IN    (NUM_FRAMES * NUM_MEL)   // 10944
+#define NUM_LABELS  12
+// Heap-allocated below. Print arena_used_bytes() at boot to tune.
+// audioBuf removed from heap (streaming approach) so arena can be larger.
+#define ARENA_KB    100
 
-// ── Labels (must match notebook LABELS order) ─────────────────────────────
-// Fill from Colab cell 8 output: "Active model labels in this run:"
+// ── Labels — v8 TARGET_LABELS order (cell 8 of sound_classification_v8.ipynb)
 const char* LABELS[NUM_LABELS] = {
   "glass_breaking",
   "gunshot",
   "explosion_or_fireworks",
+  "impact_or_thud",
+  "scream_or_shout",
   "siren_or_alarm",
   "footsteps",
   "crying_or_sobbing",
   "pet_noise",
   "weather_noise",
   "mechanical_noise",
-  "household_noise",
   "unknown_background"
 };
 
 // ── Quantization parameters ────────────────────────────────────────────────
-// Fill from Colab after model export:
-//   interpreter.get_input_details()[0]['quantization']
-// Placeholders — update before final deployment:
-#define INPUT_SCALE      0.1f
-#define INPUT_ZERO_POINT 0
+// From: interp.get_input_details()[0]['quantization'] on distilled_student_int8.tflite
+// Parsed from tinyml/models/distilled_student_int8.tflite (65808 bytes, TFL3, int8 I/O).
+// float 0.0 → int8 11;  float -10.0 → int8 -90;  float +5.0 → int8 +61.
+#define INPUT_SCALE      0.09936082f
+#define INPUT_ZERO_POINT 11
 
 // ── Globals ───────────────────────────────────────────────────────────────
-int32_t   audioBuf[WINDOW_SAMPLES];
-float     frame[FFT_SIZE];
-float     melSpec[NUM_FRAMES][NUM_MEL];
-int8_t    modelInput[MODEL_IN];
-float     modelOutput[NUM_LABELS];
-float     melFilterBank[NUM_MEL][FFT_BINS];
+// Streaming audio approach: instead of a 64 KB audioBuf for the full 2 s window,
+// we keep a FRAME_LEN-sample sliding window and process each frame on the fly.
+// Total samples read = FRAME_LEN + (NUM_FRAMES-1)*FRAME_STEP = 31991 ≈ same as before.
+// audioBuf is gone; streamBuf is 371*2 = 742 bytes in BSS.
+static int16_t   streamBuf[FRAME_LEN];   // sliding window: 742 bytes
+static int32_t   tmpReadBuf[256];        // I2S DMA intermediary: 1 KB
+static uint8_t*  tensorArena = nullptr;  // heap: ARENA_KB * 1024
+
+float  frame[FFT_SIZE];          // 2 KB
+float  fftRe[FFT_SIZE];          // 2 KB
+float  fftIm[FFT_SIZE];          // 2 KB
+float  hannWindow[FRAME_LEN];    // 1.5 KB
+// melPoints[NUM_MEL+2] replaces the 64 KB melFilterBank[64][257].
+// melSpec[171][64] (44 KB) is also gone: values are quantized on the fly.
+float  melPoints[NUM_MEL + 2];   // mel triangle Hz endpoints: 264 bytes
+float  binFreqs[FFT_BINS];       // FFT bin Hz values: 1 KB
+int8_t modelInput[MODEL_IN];     // 10.7 KB
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
 
-Eloquent::TinyML::TensorFlow::TensorFlow<MODEL_IN, NUM_LABELS, ARENA_KB * 1024> tflite;
+static tflite::MicroErrorReporter microErrorReporter;
+static tflite::AllOpsResolver     resolver;
+static tflite::MicroInterpreter*  interpreter  = nullptr;
+static TfLiteTensor*              inputTensor  = nullptr;
+static TfLiteTensor*              outputTensor = nullptr;
 
 // ── Mel helpers ────────────────────────────────────────────────────────────
 static float hzToMel(float hz) { return 2595.0f * log10f(1.0f + hz / 700.0f); }
@@ -103,32 +129,13 @@ static float melToHz(float mel) { return 700.0f * (powf(10.0f, mel / 2595.0f) - 
 void buildMelFilterBank() {
   float melLo = hzToMel(MEL_LO);
   float melHi = hzToMel(MEL_HI);
-  float melPoints[NUM_MEL + 2];
   for (int i = 0; i < NUM_MEL + 2; i++)
-    melPoints[i] = melLo + i * (melHi - melLo) / (NUM_MEL + 1);
-
-  float binFreqs[FFT_BINS];
+    melPoints[i] = melToHz(melLo + i * (melHi - melLo) / (NUM_MEL + 1));
   for (int k = 0; k < FFT_BINS; k++)
     binFreqs[k] = (float)k * SAMPLE_RATE / FFT_SIZE;
-
-  for (int m = 0; m < NUM_MEL; m++) {
-    float lo  = melToHz(melPoints[m]);
-    float ctr = melToHz(melPoints[m + 1]);
-    float hi  = melToHz(melPoints[m + 2]);
-    for (int k = 0; k < FFT_BINS; k++) {
-      float f = binFreqs[k];
-      if (f >= lo && f <= ctr)
-        melFilterBank[m][k] = (f - lo) / (ctr - lo);
-      else if (f > ctr && f <= hi)
-        melFilterBank[m][k] = (hi - f) / (hi - ctr);
-      else
-        melFilterBank[m][k] = 0.0f;
-    }
-  }
 }
 
 // ── Hann window (computed once) ────────────────────────────────────────────
-float hannWindow[FRAME_LEN];
 void buildHannWindow() {
   for (int i = 0; i < FRAME_LEN; i++)
     hannWindow[i] = 0.5f * (1.0f - cosf(2.0f * M_PI * i / (FRAME_LEN - 1)));
@@ -147,7 +154,6 @@ static void fftBitReverse(float* re, float* im, int n) {
 }
 
 // ── Cooley-Tukey radix-2 FFT ──────────────────────────────────────────────
-float fftRe[FFT_SIZE], fftIm[FFT_SIZE];
 void computeFFT(const float* x) {
   for (int i = 0; i < FFT_SIZE; i++) { fftRe[i] = (i < FRAME_LEN) ? x[i] : 0.0f; fftIm[i] = 0.0f; }
   fftBitReverse(fftRe, fftIm, FFT_SIZE);
@@ -169,41 +175,73 @@ void computeFFT(const float* x) {
   }
 }
 
-// ── Compute full mel spectrogram from audio buffer ─────────────────────────
-void computeMelSpectrogram() {
-  for (int f = 0; f < NUM_FRAMES; f++) {
-    int start = f * FRAME_STEP;
-    // Window the frame
-    for (int i = 0; i < FRAME_LEN; i++) {
-      float s = (start + i < WINDOW_SAMPLES)
-                ? (audioBuf[start + i] >> 14) / 32768.0f
-                : 0.0f;
-      frame[i] = s * hannWindow[i];
-    }
-    computeFFT(frame);
-    // Power spectrum → mel → log
-    for (int m = 0; m < NUM_MEL; m++) {
-      float energy = 0.0f;
-      for (int k = 0; k < FFT_BINS; k++) {
-        float power = fftRe[k]*fftRe[k] + fftIm[k]*fftIm[k];
-        energy += power * melFilterBank[m][k];
-      }
-      melSpec[f][m] = logf(energy + 1e-6f);
-    }
+// ── Helper: fill streamBuf[pos..pos+count-1] from I2S ─────────────────────
+static void i2sFill(int16_t* buf, int pos, int count) {
+  while (count > 0) {
+    int chunk = min(count, 256);
+    size_t got = 0;
+    i2s_read(I2S_PORT, tmpReadBuf, chunk * sizeof(int32_t), &got, portMAX_DELAY);
+    int n = got / sizeof(int32_t);
+    for (int i = 0; i < n; i++)
+      buf[pos + i] = (int16_t)(tmpReadBuf[i] >> 16);
+    pos   += n;
+    count -= n;
   }
 }
 
-// ── Quantize float mel spec to int8 model input ───────────────────────────
-void quantizeMelToInt8() {
-  for (int f = 0; f < NUM_FRAMES; f++)
-    for (int m = 0; m < NUM_MEL; m++) {
-      int q = (int)roundf(melSpec[f][m] / INPUT_SCALE) + INPUT_ZERO_POINT;
-      q = max(-128, min(127, q));
-      modelInput[f * NUM_MEL + m] = (int8_t)q;
+// ── Process one mel frame from streamBuf → modelInput[f*NUM_MEL ..] ────────
+static void processFrame(int f) {
+  for (int i = 0; i < FRAME_LEN; i++)
+    frame[i] = streamBuf[i] / 8192.0f * hannWindow[i];
+  computeFFT(frame);
+  for (int m = 0; m < NUM_MEL; m++) {
+    float lo  = melPoints[m];
+    float ctr = melPoints[m + 1];
+    float hi  = melPoints[m + 2];
+    float invAsc  = (ctr > lo) ? 1.0f / (ctr - lo)  : 0.0f;
+    float invDesc = (hi > ctr)  ? 1.0f / (hi  - ctr) : 0.0f;
+    float energy  = 0.0f;
+    for (int k = 0; k < FFT_BINS; k++) {
+      float f_hz = binFreqs[k];
+      float w = 0.0f;
+      if      (f_hz >= lo  && f_hz <= ctr) w = (f_hz - lo)  * invAsc;
+      else if (f_hz >  ctr && f_hz <= hi)  w = (hi  - f_hz) * invDesc;
+      energy += (fftRe[k]*fftRe[k] + fftIm[k]*fftIm[k]) * w;
     }
+    float melVal = logf(energy + 1e-6f);
+    int q = (int)roundf(melVal / INPUT_SCALE) + INPUT_ZERO_POINT;
+    if (q < -128) q = -128;
+    if (q >  127) q =  127;
+    modelInput[f * NUM_MEL + m] = (int8_t)q;
+  }
 }
 
-// ── Wi-Fi / MQTT ───────────────────────────────────────────────────────────
+// ── Streaming capture + spectrogram + quantization ─────────────────────────
+// Replaces the old "read 32000 samples into audioBuf" + computeAndQuantize().
+// Memory: streamBuf[371] = 742 bytes (vs 64 KB audioBuf).
+// Total samples read = FRAME_LEN + (NUM_FRAMES-1)*FRAME_STEP = 31991.
+// Returns RMS of the first frame's samples (debug only).
+float captureAndProcess() {
+  // Fill initial window
+  i2sFill(streamBuf, 0, FRAME_LEN);
+
+  // RMS over first window (proxy for signal level)
+  int64_t sumSq = 0;
+  for (int i = 0; i < FRAME_LEN; i++) sumSq += (int64_t)streamBuf[i] * streamBuf[i];
+  float rms = sqrtf((float)sumSq / FRAME_LEN);
+
+  for (int f = 0; f < NUM_FRAMES; f++) {
+    processFrame(f);
+    if (f < NUM_FRAMES - 1) {
+      // Slide window: keep OVERLAP_LEN old samples, read FRAME_STEP new ones
+      memmove(streamBuf, streamBuf + FRAME_STEP, OVERLAP_LEN * sizeof(int16_t));
+      i2sFill(streamBuf, OVERLAP_LEN, FRAME_STEP);
+    }
+  }
+  return rms;
+}
+
+// ── I2S / Wi-Fi / MQTT ─────────────────────────────────────────────────────
 void setupI2S() {
   i2s_config_t cfg = {
     .mode                = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
@@ -250,14 +288,37 @@ void setup() {
 
   buildHannWindow();
   buildMelFilterBank();
+
+  // Allocate tensorArena before Wi-Fi to get a contiguous pre-fragmentation block.
+  // With audioBuf gone (streaming approach), only one large heap allocation is needed.
+  tensorArena = (uint8_t*)malloc(ARENA_KB * 1024);
+  if (!tensorArena) {
+    Serial.printf("FATAL: malloc tensorArena failed (%d KB) — free: %u, max: %u\n",
+                  ARENA_KB, ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+    while (true) delay(1000);
+  }
+  Serial.printf("Free heap after malloc: %u bytes\n", ESP.getFreeHeap());
+
   setupI2S();
   connectWifi();
   connectMqtt();
 
-  if (!tflite.begin(distilled_student_int8)) {
-    Serial.println("TFLite init failed — check model_data.h");
+  const tflite::Model* model = tflite::GetModel(distilled_student_int8);
+  if (model->version() != TFLITE_SCHEMA_VERSION) {
+    Serial.printf("Model schema mismatch: %lu vs %d\n", model->version(), TFLITE_SCHEMA_VERSION);
     while (true) delay(1000);
   }
+  static tflite::MicroInterpreter staticInterpreter(
+      model, resolver, tensorArena, ARENA_KB * 1024, &microErrorReporter);
+  interpreter = &staticInterpreter;
+  if (interpreter->AllocateTensors() != kTfLiteOk) {
+    Serial.printf("AllocateTensors failed (%d KB arena) — increase ARENA_KB\n", ARENA_KB);
+    while (true) delay(1000);
+  }
+  Serial.printf("Arena used: %u / %u bytes\n",
+                interpreter->arena_used_bytes(), (unsigned)(ARENA_KB * 1024));
+  inputTensor  = interpreter->input(0);
+  outputTensor = interpreter->output(0);
   Serial.println("TFLite model loaded");
   Serial.println("ESP32 TinyML audio node ready");
 }
@@ -267,48 +328,31 @@ void loop() {
   if (!mqtt.connected()) connectMqtt();
   mqtt.loop();
 
-  // 1. Capture 2 s of audio
-  size_t total = 0;
-  while (total < WINDOW_SAMPLES) {
-    size_t got = 0;
-    i2s_read(I2S_PORT, audioBuf + total,
-             (WINDOW_SAMPLES - total) * sizeof(int32_t), &got, portMAX_DELAY);
-    total += got / sizeof(int32_t);
-  }
-
   unsigned long t0 = millis();
 
-  // 2. Features
-  computeMelSpectrogram();
-  quantizeMelToInt8();
+  // 1. Capture 2 s of audio and compute mel spectrogram in one streaming pass
+  float rms = captureAndProcess();
 
-  // 3. Inference
-  tflite.predict(modelInput, modelOutput);
+  // 2. Inference
+  memcpy(inputTensor->data.int8, modelInput, MODEL_IN * sizeof(int8_t));
+  interpreter->Invoke();
 
   unsigned long inferenceMs = millis() - t0;
 
-  // 4. Decode best label
+  // 3. Decode best label
   int bestIdx = 0;
   for (int i = 1; i < NUM_LABELS; i++)
-    if (modelOutput[i] > modelOutput[bestIdx]) bestIdx = i;
+    if (outputTensor->data.int8[i] > outputTensor->data.int8[bestIdx]) bestIdx = i;
 
-  // Softmax confidence
+  // Softmax over raw int8 output scores
   float expSum = 0.0f;
-  for (int i = 0; i < NUM_LABELS; i++) expSum += expf(modelOutput[i]);
-  float confidence = expf(modelOutput[bestIdx]) / expSum;
+  for (int i = 0; i < NUM_LABELS; i++) expSum += expf((float)outputTensor->data.int8[i]);
+  float confidence = expf((float)outputTensor->data.int8[bestIdx]) / expSum;
 
-  // RMS for debug
-  int64_t sumSq = 0;
-  for (int i = 0; i < WINDOW_SAMPLES; i++) {
-    int32_t s = audioBuf[i] >> 14;
-    sumSq += (int64_t)s * s;
-  }
-  float rms = sqrtf((float)sumSq / WINDOW_SAMPLES);
-
-  // 5. Publish classification
+  // 4. Publish classification
   char payload[200];
   snprintf(payload, sizeof(payload),
-    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_int8\"}",
+    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v8_int8\"}",
     LABELS[bestIdx], confidence, rms, inferenceMs);
   mqtt.publish(MQTT_TOPIC, payload);
 

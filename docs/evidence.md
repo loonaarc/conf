@@ -435,6 +435,19 @@ ESP3 Context:
 
 Each sensor module is shown with its VCC, GND, and signal connections. VCC and GND power symbols are shared across the schematic as global nets.
 
+## 35. EasyEDA Wiring Plan: Including ESP32 Audio Node
+
+![EasyEDA wiring plan including ESP32 audio node](evidence/35-easyeda-wiring-plan-esp32.png)
+
+Figure 35 is an updated schematic wiring plan drawn in EasyEDA. It extends the three Tasmota D1 Mini nodes from figure 34 with the ESP32 audio node:
+
+ESP32 Audio Node:
+- INMP441 I2S microphone VDD → 3V3
+- INMP441 SCK → D14 / GPIO14
+- INMP441 WS → D15 / GPIO15
+- INMP441 SD → D32 / GPIO32
+- INMP441 L/R → GND (left channel select)
+
 ## Evidence Chain
 
 The final proof chain for the recorded demo is:

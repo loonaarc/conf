@@ -10,6 +10,10 @@ docs/evidence/34-easyeda-wiring-plan.png
 
 The schematic shows each node as a Wemos D1 Mini symbol with its connected sensor and actuator modules, including VCC, GND, and signal connections for each component.
 
+An updated plan including the ESP32 audio node with INMP441 I2S microphone is captured in evidence 35:
+
+![EasyEDA wiring plan including ESP32 audio node](evidence/35-easyeda-wiring-plan-esp32.png)
+
 ## Node Overview
 
 This guide documents the current hardware setup:
