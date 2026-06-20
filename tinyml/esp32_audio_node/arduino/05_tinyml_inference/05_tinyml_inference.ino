@@ -1,10 +1,14 @@
 // ESP32 TFLite Micro sound classification with MQTT publishing.
-// Model: distilled student v13  –  float32 I/O, Input(85,32,1), MaxPool in firmware, ~61% accuracy.
+// Model: distilled student v15  –  int8 I/O, SepConv->BN->ReLU, BN folded, arena ~90 KB.
 //
 // Captures 2 s of audio at 16 kHz, computes a 171x64 log-mel spectrogram,
 // runs the distilled int8 model, and publishes the result via MQTT.
 //
-// No quantization constants needed: float32 I/O, firmware feeds raw pooled log-mel values.
+// Firmware applies: int8 = round((logmel - NORM_MEAN) / NORM_STD / INPUT_SCALE + INPUT_ZERO_POINT)
+#define NORM_MEAN        -4.540420f
+#define NORM_STD          6.041347f
+#define INPUT_SCALE       0.01590111f
+#define INPUT_ZERO_POINT  (-31)
 //
 // NOTE – sample-rate mismatch (known project limitation):
 //   Training: 44.1 kHz audio, mel range 80–16000 Hz.
@@ -104,7 +108,7 @@ float  hannWindow[FRAME_LEN];    // 1.5 KB
 float  melPoints[NUM_INPUT_MEL + 2];  // mel triangle Hz endpoints: 264 bytes
 float  binFreqs[FFT_BINS];            // FFT bin Hz values: 1 KB
 float  prevMelLine[NUM_INPUT_MEL];    // previous mel frame for time-axis pooling: 256 bytes
-float  modelInput[MODEL_IN];          // 10.9 KB — pooled log-mel, float32 I/O for v13
+int8_t modelInput[MODEL_IN];          // 2.7 KB — pooled normalized quantized, int8 I/O for v14
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -228,7 +232,10 @@ float captureAndProcess() {
       for (int m = 0; m < NUM_INPUT_MEL; m += 2) {
         float t0 = fmaxf(prevMelLine[m],   curMel[m]);
         float t1 = fmaxf(prevMelLine[m+1], curMel[m+1]);
-        modelInput[outF * NUM_POOL_MEL + m / 2] = fmaxf(t0, t1);
+        float pooled = fmaxf(t0, t1);
+        float norm = (pooled - NORM_MEAN) / NORM_STD;
+        int q = (int)roundf(norm / INPUT_SCALE + INPUT_ZERO_POINT);
+        modelInput[outF * NUM_POOL_MEL + m / 2] = (int8_t)(q < -128 ? -128 : q > 127 ? 127 : q);
       }
     }
 
@@ -333,7 +340,7 @@ void loop() {
   float rms = captureAndProcess();
 
   // 2. Inference
-  memcpy(inputTensor->data.f, modelInput, MODEL_IN * sizeof(float));
+  memcpy(inputTensor->data.int8, modelInput, MODEL_IN * sizeof(int8_t));
   interpreter->Invoke();
 
   unsigned long inferenceMs = millis() - t0;
@@ -350,7 +357,7 @@ void loop() {
   // 4. Publish classification
   char payload[200];
   snprintf(payload, sizeof(payload),
-    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v13\"}",
+    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v15\"}",
     LABELS[bestIdx], confidence, rms, inferenceMs);
   mqtt.publish(MQTT_TOPIC, payload);
 
