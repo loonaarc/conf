@@ -100,7 +100,7 @@ The notebook mounts Google Drive and links that folder to `/content/data/raw/FSD
 
 ## Comparison Table
 
-Last completed run: v8. v9 Mixup regression. v10 results pending.
+Last completed run: v8. v9 Mixup regression. v10 partial (student incomplete — run aborted at epoch 60/120).
 
 | Metric | Scratch TensorFlow | YAMNet Teacher | Distilled TinyML Student |
 | --- | --- | --- | --- |
@@ -140,7 +140,7 @@ Each version is a separate notebook. Key changes and their measured impact on di
 | v7 | 12 | Reverted to v5 single-stage; corrected FSD50K label names from official website; added ~20 new FSD50K mappings (Music 14 K, Vehicle, etc.) | 59.4% | 74.5% | 58.6% | 41 KB | Removed non-existent FSD50K labels (Chainsaw, Baby_cry, Smoke_detector); added high-volume background sources |
 | v8 | 12 | Donate-a-cry corpus (crying: 175→632); cap raised 800→1200; 4th SepConv(128) block | 64.7% | 75.7% | **66.9%** | 64 KB | New best. Student outperforms regular model (66.9% vs 64.7%) on same data — 37× smaller. 8 534 train / 1 830 test examples |
 | v9 | 12 | Mixup augmentation (Beta(0.2,0.2), batch-level, blends spectrograms + teacher soft labels); version-aware Drive checkpoints; 120 ep / patience 18; reuses v8 features + teacher | 64.7% | 75.7% | 64.0% | 64 KB | Regression vs v8: student dropped from 66.9% to 64.0%. Mixup alpha=0.2 too aggressive — blended spectrograms may create unrealistic combinations for this dataset. v8 remains best student. |
-| v10 | 12 | Three-phase teacher: Phase 1 frozen embeddings + compact Dense head (256→128, L2=1e-3, Dropout 0.5/0.4); Phase 2 end-to-end fine-tuning via `hub.load()` @ LR=1e-5 with 3-epoch warmup + gradient clipping (norm=1.0), 25 ep / patience 5; Phase 3 re-extract all embeddings with fine-tuned YAMNet. Regular CNN: `Conv → BatchNorm → ReLU` blocks added. Student: SpecAugment + Gaussian noise augmentation, Dropout(0.35) after Dense(128), distillation T=4.0. Student TFLite: float32 I/O (int8 internal) to avoid Normalization layer scale=0 collapse. | — | — | — | — | Results pending |
+| v10 | 12 | Three-phase teacher: Phase 1 frozen embeddings + compact Dense head (256→128, L2=1e-3, Dropout 0.5/0.4); Phase 2 end-to-end fine-tuning via `hub.load()` @ LR=1e-5 with 3-epoch warmup + gradient clipping (norm=1.0), 25 ep / patience 5; Phase 3 re-extract all embeddings with fine-tuned YAMNet. Regular CNN: `Conv → BatchNorm → ReLU` blocks added. Student: SpecAugment + Gaussian noise augmentation, Dropout(0.35) after Dense(128), distillation T=4.0. Student TFLite: float32 I/O (int8 internal) to avoid Normalization layer scale=0 collapse. | 64.5% | **77.9%** | incomplete (aborted ep 60/120, best val 64.3%) | — | Teacher +2.2pp vs v8 (fine-tuning worked). Student run aborted; quantization not executed. v8 remains best student. |
 
 **Key lessons learned:**
 

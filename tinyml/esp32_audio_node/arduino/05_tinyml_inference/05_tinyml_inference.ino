@@ -69,7 +69,7 @@
 #define NUM_LABELS  12
 // Heap-allocated below. Print arena_used_bytes() at boot to tune.
 // audioBuf removed from heap (streaming approach) so arena can be larger.
-#define ARENA_KB    100
+#define ARENA_KB    120
 
 // ── Labels — v8 TARGET_LABELS order (cell 8 of sound_classification_v8.ipynb)
 const char* LABELS[NUM_LABELS] = {
@@ -111,7 +111,7 @@ float  hannWindow[FRAME_LEN];    // 1.5 KB
 // melSpec[171][64] (44 KB) is also gone: values are quantized on the fly.
 float  melPoints[NUM_MEL + 2];   // mel triangle Hz endpoints: 264 bytes
 float  binFreqs[FFT_BINS];       // FFT bin Hz values: 1 KB
-int8_t modelInput[MODEL_IN];     // 10.7 KB
+float  modelInput[MODEL_IN];     // 42.7 KB — float32 I/O for v10 model
 
 WiFiClient   wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -208,11 +208,7 @@ static void processFrame(int f) {
       else if (f_hz >  ctr && f_hz <= hi)  w = (hi  - f_hz) * invDesc;
       energy += (fftRe[k]*fftRe[k] + fftIm[k]*fftIm[k]) * w;
     }
-    float melVal = logf(energy + 1e-6f);
-    int q = (int)roundf(melVal / INPUT_SCALE) + INPUT_ZERO_POINT;
-    if (q < -128) q = -128;
-    if (q >  127) q =  127;
-    modelInput[f * NUM_MEL + m] = (int8_t)q;
+    modelInput[f * NUM_MEL + m] = logf(energy + 1e-6f);  // float32 direct — v10 model has Normalization layer
   }
 }
 
@@ -334,25 +330,24 @@ void loop() {
   float rms = captureAndProcess();
 
   // 2. Inference
-  memcpy(inputTensor->data.int8, modelInput, MODEL_IN * sizeof(int8_t));
+  memcpy(inputTensor->data.f, modelInput, MODEL_IN * sizeof(float));
   interpreter->Invoke();
 
   unsigned long inferenceMs = millis() - t0;
 
-  // 3. Decode best label
+  // 3. Decode best label (float32 logits — v10 model)
   int bestIdx = 0;
   for (int i = 1; i < NUM_LABELS; i++)
-    if (outputTensor->data.int8[i] > outputTensor->data.int8[bestIdx]) bestIdx = i;
+    if (outputTensor->data.f[i] > outputTensor->data.f[bestIdx]) bestIdx = i;
 
-  // Softmax over raw int8 output scores
   float expSum = 0.0f;
-  for (int i = 0; i < NUM_LABELS; i++) expSum += expf((float)outputTensor->data.int8[i]);
-  float confidence = expf((float)outputTensor->data.int8[bestIdx]) / expSum;
+  for (int i = 0; i < NUM_LABELS; i++) expSum += expf(outputTensor->data.f[i]);
+  float confidence = expf(outputTensor->data.f[bestIdx]) / expSum;
 
   // 4. Publish classification
   char payload[200];
   snprintf(payload, sizeof(payload),
-    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v8_int8\"}",
+    "{\"label\":\"%s\",\"confidence\":%.2f,\"rms\":%.1f,\"inference_ms\":%lu,\"model\":\"distilled_student_v10\"}",
     LABELS[bestIdx], confidence, rms, inferenceMs);
   mqtt.publish(MQTT_TOPIC, payload);
 
